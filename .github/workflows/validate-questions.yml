@@ -1,0 +1,17 @@
+name: Validate questions
+on:
+  push:
+    paths: ['questions.json', 'scripts/validate_questions.py', '.github/workflows/validate-questions.yml']
+  pull_request:
+    paths: ['questions.json', 'scripts/validate_questions.py', '.github/workflows/validate-questions.yml']
+permissions:
+  contents: read
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - run: python scripts/validate_questions.py

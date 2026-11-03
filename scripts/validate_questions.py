@@ -17,8 +17,17 @@ def validate(data):
         label = f'문제 {n}'
         if not isinstance(q, dict):
             errors.append(f'{label}: 객체가 아닙니다.'); continue
-        if set(q) != FIELDS:
-            errors.append(f'{label}: 누락 필드 {sorted(FIELDS-set(q))}, 지원하지 않는 필드 {sorted(set(q)-FIELDS)}')
+        if not FIELDS.issubset(q) or set(q)-FIELDS-{'diagram'}:
+            errors.append(f'{label}: 누락 필드 {sorted(FIELDS-set(q))}, 지원하지 않는 필드 {sorted(set(q)-FIELDS-{'diagram'})}')
+        if 'diagram' in q:
+            d = q['diagram']
+            valid = isinstance(d,dict) and set(d)=={'type','allies','enemies'} and d.get('type')=='participation'
+            a = d.get('allies') if isinstance(d,dict) else None
+            valid = valid and isinstance(a,dict) and set(a)=={'main','side','joining'}
+            if valid:
+                valid = all(type(v) is int and 0<=v<=5 for v in a.values()) and 1<=sum(a.values())<=5 and type(d['enemies']) is int and 1<=d['enemies']<=5
+            if not valid:
+                errors.append(f'{label}: diagram은 participation 형식의 아군 인원과 상대 인원이어야 합니다.')
         identifier = q.get('id')
         if not isinstance(identifier,str) or not re.fullmatch(r'[a-z0-9]+(?:-[a-z0-9]+)*',identifier):
             errors.append(f'{label}: id는 소문자 영문·숫자·하이픈이어야 합니다.')
@@ -64,3 +73,4 @@ def main():
 
 if __name__ == '__main__':
     raise SystemExit(main())
+

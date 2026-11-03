@@ -120,7 +120,7 @@
   },
   {
     "id": "highground",
-    "cat": "자리",
+    "cat": "구도",
     "chapter": 5,
     "title": "우리 메인딜이 2층을 쓰지 않는다면?",
     "scene": "cover",
@@ -336,7 +336,7 @@
   },
   {
     "id": "range-longer-reach",
-    "cat": "자리",
+    "cat": "구도",
     "chapter": 2,
     "title": "내가 더 먼 거리에서 잘 싸운다면?",
     "scene": "cover",
@@ -358,7 +358,7 @@
   },
   {
     "id": "range-shorter-reach",
-    "cat": "자리",
+    "cat": "구도",
     "chapter": 2,
     "title": "내 공격이 닿기에는 너무 멀다면?",
     "scene": "cover",

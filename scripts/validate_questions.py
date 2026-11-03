@@ -6,7 +6,7 @@ import sys
 from pathlib import Path
 
 FIELDS = {'id','cat','chapter','title','scene','context','facts','options','answer','cue','why','wrong'}
-CATS = {'인원수','엄폐','스킬','궁극기','자리'}
+CATS = {'인원수','엄폐','스킬','궁극기','구도'}
 SCENES = {'count','cover','skill','ult'}
 
 def validate(data):

@@ -463,6 +463,7 @@ function render() {
     else if (page === "practice") practice();
     else if (page === "question") question(id);
     else if (page === "roles") rolePage();
+    else if (page === "review") matchPage();
     else home();
   } catch (error) {
     console.error(error);

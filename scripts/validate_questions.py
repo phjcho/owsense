@@ -17,8 +17,10 @@ def validate(data):
         label = f'문제 {n}'
         if not isinstance(q, dict):
             errors.append(f'{label}: 객체가 아닙니다.'); continue
-        if not FIELDS.issubset(q) or set(q)-FIELDS-{'diagram'}:
-            errors.append(f'{label}: 누락 필드 {sorted(FIELDS-set(q))}, 지원하지 않는 필드 {sorted(set(q)-FIELDS-{'diagram'})}')
+        if not FIELDS.issubset(q) or set(q)-FIELDS-{'diagram','difficulty'}:
+            errors.append(f'{label}: 누락 필드 {sorted(FIELDS-set(q))}, 지원하지 않는 필드 {sorted(set(q)-FIELDS-{'diagram','difficulty'})}')
+        if 'difficulty' in q and q['difficulty'] not in ('기본','응용'):
+            errors.append(f'{label}: difficulty는 기본 또는 응용이어야 합니다.')
         if 'diagram' in q:
             d = q['diagram']
             valid = isinstance(d,dict) and set(d)=={'type','allies','enemies'} and d.get('type')=='participation'

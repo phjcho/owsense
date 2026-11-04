@@ -25,7 +25,16 @@ function persist() {
   } catch {}
 }
 function scene(q) {
-  return `<div class="scene scene-clues"><span class="eyebrow">${esc(q.cat)} · 상황 단서</span><div class="clue-grid">${q.facts.map((fact, i) => `<div class="clue-tile"><span aria-hidden="true">0${i + 1}</span><b>${esc(fact)}</b></div>`).join("")}</div></div>`;
+  const art = {
+    인원수:
+      '<g transform="translate(76 66)"><circle cy="-14" r="10" fill="#fffdf8"/><path d="M-14 21v-8a14 14 0 0128 0v8" fill="#fffdf8"/></g><g transform="translate(120 53)"><circle cy="-14" r="10" fill="#fffdf8"/><path d="M-14 21v-8a14 14 0 0128 0v8" fill="#fffdf8"/></g><g transform="translate(164 66)"><circle cy="-14" r="10" fill="#fffdf8"/><path d="M-14 21v-8a14 14 0 0128 0v8" fill="#fffdf8"/></g><path d="M49 94q71 28 142 0" stroke-dasharray="3 7"/>',
+    엄폐: '<path d="M125 31h31v81h-31z" fill="#d7dfcf"/><g transform="translate(100 76)"><circle cy="-14" r="10" fill="#fffdf8"/><path d="M-14 21v-8a14 14 0 0128 0v8" fill="#fffdf8"/></g><path d="M180 49h22m-22 20h13" stroke="#d6ab8b" stroke-dasharray="5 5"/>',
+    스킬: '<circle cx="120" cy="70" r="39" stroke="#c5d6d7"/><path d="M124 42l-22 32h19l-5 25 25-36h-20z" fill="#fffdf8"/><path d="M153 39l8 5 3-10"/>',
+    궁극기:
+      '<circle cx="120" cy="70" r="36" stroke="#ddc2a8"/><path d="M120 43l7 19 20 8-20 7-7 20-7-20-20-7 20-8z" fill="#fffdf8"/><path d="M72 42l-7-8m99 8 7-8M71 99l-7 7m100-7 7 7" stroke="#ddc2a8"/>',
+    구도: '<path d="M55 109h42V84h43V56h46v53" fill="#dce3d3"/><path d="M55 109h42V84h43V56h46"/><g transform="translate(162 37)"><circle cy="-14" r="10" fill="#fffdf8"/><path d="M-14 21v-8a14 14 0 0128 0v8" fill="#fffdf8"/></g><path d="M174 43l34 17m-34-17 31 37" stroke-dasharray="3 6" stroke="#b6c4ae"/>',
+  };
+  return `<div class="topic-art"><svg viewBox="0 0 240 140" aria-hidden="true" focusable="false" fill="none" stroke="#607867" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">${art[q.cat] || art["구도"]}</svg><span>TOPIC / ${esc(q.cat)}</span></div>`;
 }
 function card(q) {
   return `<a class="card" href="#question/${q.id}">${scene(q)}<div class="card-body"><span class="tag">${esc(q.cat)}</span> <span class="tag difficulty-tag">${esc(q.difficulty || "기본")}</span><h3>${esc(q.title)}</h3><p>${esc(q.context.slice(0, 65))}…</p><div class="meta"><span>${saved[q.id] ? "✓ 해설 확인 완료" : "상황 판단 · 약 1분"}</span><b>연습하기 ↗</b></div></div></a>`;
@@ -90,7 +99,7 @@ function question(id) {
     location.hash = "practice";
     return;
   }
-  app.innerHTML = `<section class="practice"><a class="back" href="#practice">← 판단 연습 목록</a><div class="sectionhead"><span class="eyebrow">SCENARIO ${String(questions.indexOf(q) + 1).padStart(2, "0")} / ${questions.length}</span><span class="tag">${esc(q.cat)}</span> <span class="tag difficulty-tag">${esc(q.difficulty || "기본")}</span></div><div class="question">${q.diagram ? participationMap(q) : scene(q)}<h1>${esc(q.title)}</h1><p class="lead">${esc(q.context)}</p><div class="facts">${q.facts.map((x) => `<span class="fact">${esc(x)}</span>`).join("")}</div><b>지금 가장 알맞은 판단은?</b><div class="options" role="group" aria-label="답 선택">${q.options.map((x, i) => `<button class="option" data-option="${i}" aria-pressed="false"><span>0${i + 1}</span>${esc(x)}</button>`).join("")}</div><button id="check" class="btn orange" disabled style="opacity:.45">판단 확인하기 →</button><div id="question-feedback" aria-live="polite"></div></div></section>`;
+  app.innerHTML = `<section class="practice"><a class="back" href="#practice">← 판단 연습 목록</a><div class="sectionhead"><span class="eyebrow">SCENARIO ${String(questions.indexOf(q) + 1).padStart(2, "0")} / ${questions.length}</span><span class="tag">${esc(q.cat)}</span> <span class="tag difficulty-tag">${esc(q.difficulty || "기본")}</span></div><div class="question">${q.diagram ? participationMap(q) : ""}<h1>${esc(q.title)}</h1><p class="lead">${esc(q.context)}</p><div class="facts">${q.facts.map((x) => `<span class="fact">${esc(x)}</span>`).join("")}</div><b>지금 가장 알맞은 판단은?</b><div class="options" role="group" aria-label="답 선택">${q.options.map((x, i) => `<button class="option" data-option="${i}" aria-pressed="false"><span>0${i + 1}</span>${esc(x)}</button>`).join("")}</div><button id="check" class="btn orange" disabled style="opacity:.45">판단 확인하기 →</button><div id="question-feedback" aria-live="polite"></div></div></section>`;
   const buttons = [...document.querySelectorAll("[data-option]")],
     check = document.querySelector("#check"),
     feedback = document.querySelector("#question-feedback");

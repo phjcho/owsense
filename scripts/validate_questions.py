@@ -70,6 +70,9 @@ def main():
     errors = validate(data)
     if errors:
         print('\n'.join('FAIL: '+e for e in errors), file=sys.stderr); return 1
+    counts = [sum(q['answer']==i for q in data) for i in range(3)]
+    if max(counts)-min(counts)>2:
+        print(f'WARN: 정답 위치 분포 {counts}. 특정 위치에 치우치지 않았는지 검토하세요.')
     print(f'PASS: {len(data)}개 문제 형식 검사 통과. 내용은 코치 검토가 필요합니다.')
     return 0
 

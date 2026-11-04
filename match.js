@@ -507,6 +507,15 @@ function matchErrors(state) {
     errors.push("우리 팀 기준으로 공격·수비를 선택해주세요.");
   return errors;
 }
+// Vector renditions of the attack / defense marks in the supplied game screenshots.
+const matchSideIcons = {
+  attack: `<svg class="match-side-icon attack" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><g fill="currentColor"><path d="M3 2l5 2 10 12-2 2L5 6zM14 16l2-2 5 5-2 2zM13 18l5-5 1.5 1.5-5 5z"/><path d="M21 2l-5 2L6 16l2 2L19 6zM10 16l-2-2-5 5 2 2zM11 18l-5-5-1.5 1.5 5 5z"/></g></svg>`,
+  defense: `<svg class="match-side-icon defense" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path fill="currentColor" d="M3 2h18v9c0 5.2-3.5 8.6-9 11C6.5 19.6 3 16.2 3 11z"/><path fill="#102130" d="M7 6h2v2h2V5h2v3h2V6h2v5h-3v5l3 2H7l3-2v-5H7z"/></svg>`,
+};
+function matchSideBadge(side) {
+  return `${matchSideIcons[side]}${side === "attack" ? "공격" : "수비"}`;
+}
+
 function matchPage() {
   let state;
   try {
@@ -525,7 +534,7 @@ function matchPage() {
       .map((h) => `<option value="${h.id}">${esc(h.name)}</option>`)
       .join("");
   const teamHTML = (team) =>
-    `<section class="match-team ${team}" aria-labelledby="${team}-title"><div class="match-team-heading"><div><span class="eyebrow">${team === "ally" ? "OUR TEAM" : "OPPONENTS"}</span><h2 id="${team}-title">${team === "ally" ? "우리 팀" : "상대 팀"}</h2></div><span class="match-team-count" id="${team}-count">0 / 5</span></div>${matchSlots.map((slot, i) => `<div class="match-slot"><label for="${team}-${i}" class="match-slot-label">${slot.label}</label><div class="match-hero-field"><span class="match-portrait" id="portrait-${team}-${i}" aria-hidden="true">${matchRoleIcons[slot.role]}</span><select id="${team}-${i}" data-team="${team}" data-slot="${i}"><option value="">영웅 선택</option>${options(slot.role)}</select></div>${team === "ally" ? `<label class="match-me"><input type="radio" name="match-me" value="${i}" aria-label="내 영웅: ${slot.label}"><span>나</span></label>` : ""}</div>`).join("")}<p class="match-team-note">${team === "ally" ? "내가 플레이할 영웅 옆에 ‘나’를 표시하세요." : "우리 팀과 같은 영웅도 선택할 수 있어요."}</p></section>`;
+    `<section class="match-team ${team}" aria-labelledby="${team}-title"><div class="match-team-heading"><div><span class="eyebrow">${team === "ally" ? "OUR TEAM" : "OPPONENTS"}</span><h2 id="${team}-title">${team === "ally" ? "우리 팀" : "상대 팀"}<span id="${team}-side" class="match-side-badge" hidden></span></h2></div><span class="match-team-count" id="${team}-count">0 / 5</span></div>${matchSlots.map((slot, i) => `<div class="match-slot"><label for="${team}-${i}" class="match-slot-label">${slot.label}</label><div class="match-hero-field"><span class="match-portrait" id="portrait-${team}-${i}" aria-hidden="true">${matchRoleIcons[slot.role]}</span><select id="${team}-${i}" data-team="${team}" data-slot="${i}"><option value="">영웅 선택</option>${options(slot.role)}</select></div>${team === "ally" ? `<label class="match-me"><input type="radio" name="match-me" value="${i}" aria-label="내 영웅: ${slot.label}"><span>나</span></label>` : ""}</div>`).join("")}<p class="match-team-note">${team === "ally" ? "내가 플레이할 영웅 옆에 ‘나’를 표시하세요." : "우리 팀과 같은 영웅도 선택할 수 있어요."}</p></section>`;
   app.innerHTML = `<div class="page-title match-page-title"><div class="eyebrow">MATCH PLANNER / 운영과 복기 <span class="match-beta">BETA</span></div><h1>이번 판, 어떤 조합인가요?</h1><p class="lead">맵과 양 팀의 영웅을 골라 이번 판을 정리해보세요.</p><p class="match-beta-note">지금은 정보 입력 단계만 사용할 수 있어요. 조합별 운영 안내와 복기는 준비 중이에요.</p></div><form id="match-form" novalidate><section class="match-map-stage" aria-labelledby="match-map-title"><div class="match-map-content"><div><span class="eyebrow">01 / BATTLEGROUND</span><h2 id="match-map-title">이번 판의 맵은?</h2><p id="match-map-caption">맵은 나중에 선택해도 괜찮아요.</p></div><div class="match-map-controls"><label for="match-map">맵 <small>선택 사항</small></label><select id="match-map"><option value="">맵 선택 안 함</option>${[
     "혼합",
     "호위",
@@ -543,7 +552,7 @@ function matchPage() {
     )
     .join(
       "",
-    )}</select><fieldset id="match-side-wrap" hidden><legend>우리 팀은?</legend><div class="match-side-options"><label><input type="radio" name="match-side" value="attack"><span>공격</span></label><label><input type="radio" name="match-side" value="defense"><span>수비</span></label></div></fieldset><p id="match-no-side" class="match-no-side" hidden>이 모드는 공격·수비 구분이 없어요.</p></div></div></section><div class="match-lineup-title"><span class="eyebrow">02 / LINEUP</span><p>양 팀의 영웅을 선택하세요. 딜러·힐러 순서는 자유예요.</p></div><div class="match-arena"><div class="match-map-photo" id="match-map-photo" aria-hidden="true"></div><div class="match-teams">${teamHTML("ally")}<div class="match-versus"><span aria-hidden="true">VS</span><p id="match-arena-map">YOUR MATCH</p></div>${teamHTML("enemy")}</div></div><div id="match-errors" class="match-errors" role="alert"></div><div class="match-bottom"><div><p id="match-draft-status" role="status">입력 내용은 이 브라우저에 자동 저장돼요.</p><small>맵 선택은 생략할 수 있어요.</small></div><div class="actions"><button type="button" class="btn light" id="match-clear">입력 초기화</button><button type="submit" class="btn orange">입력 내용 확인 →</button></div></div></form><section id="match-summary" class="match-summary" hidden aria-labelledby="match-summary-title"></section><p class="match-image-credit">전장·영웅 이미지 © Blizzard Entertainment · 전장 이미지 제공: <a href="https://overfast-api.tekrop.fr/" target="_blank" rel="noopener noreferrer">OverFast API</a></p>`;
+    )}</select><fieldset id="match-side-wrap" hidden><legend>우리 팀은?</legend><div class="match-side-options"><label><input type="radio" name="match-side" value="attack"><span>${matchSideBadge("attack")}</span></label><label><input type="radio" name="match-side" value="defense"><span>${matchSideBadge("defense")}</span></label></div></fieldset><p id="match-no-side" class="match-no-side" hidden>이 모드는 공격·수비 구분이 없어요.</p></div></div></section><div class="match-lineup-title"><span class="eyebrow">02 / LINEUP</span><p>양 팀의 영웅을 선택하세요. 딜러·힐러 순서는 자유예요.</p></div><div class="match-arena"><div class="match-map-photo" id="match-map-photo" aria-hidden="true"></div><div class="match-teams">${teamHTML("ally")}<div class="match-versus"><span aria-hidden="true">VS</span><p id="match-arena-map">YOUR MATCH</p></div>${teamHTML("enemy")}</div></div><div id="match-errors" class="match-errors" role="alert"></div><div class="match-bottom"><div><p id="match-draft-status" role="status">입력 내용은 이 브라우저에 자동 저장돼요.</p><small>맵 선택은 생략할 수 있어요.</small></div><div class="actions"><button type="button" class="btn light" id="match-clear">입력 초기화</button><button type="submit" class="btn orange">입력 내용 확인 →</button></div></div></form><section id="match-summary" class="match-summary" hidden aria-labelledby="match-summary-title"></section><p class="match-image-credit">전장·영웅 이미지 © Blizzard Entertainment · 전장 이미지 제공: <a href="https://overfast-api.tekrop.fr/" target="_blank" rel="noopener noreferrer">OverFast API</a></p>`;
   const form = document.querySelector("#match-form");
   const summary = document.querySelector("#match-summary");
   const errorBox = document.querySelector("#match-errors");
@@ -600,7 +609,18 @@ function matchPage() {
       input.closest(".match-slot").classList.toggle("is-me", state.mine === i);
     });
   };
+  const syncSides = () => {
+    const active = matchMaps.some((map) => map.id === state.map && map.sided) &&
+      ["attack", "defense"].includes(state.side);
+    for (const team of ["ally", "enemy"]) {
+      const badge = document.querySelector(`#${team}-side`);
+      badge.hidden = !active;
+      badge.innerHTML = active ? matchSideBadge(team === "ally" ? state.side :
+        state.side === "attack" ? "defense" : "attack") : "";
+    }
+  };
   const syncMap = () => {
+    syncSides();
     const map = matchMaps.find((m) => m.id === state.map);
     const photo = document.querySelector("#match-map-photo");
     photo.style.backgroundImage = "none";
@@ -669,6 +689,7 @@ function matchPage() {
     (input) =>
       (input.onchange = () => {
         state.side = input.value;
+        syncSides();
         writeDraft();
       }),
   );

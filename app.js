@@ -31,7 +31,7 @@ function scene(q) {
     엄폐: '<path d="M125 31h31v81h-31z" fill="#d7dfcf"/><g transform="translate(100 76)"><circle cy="-14" r="10" fill="#fffdf8"/><path d="M-14 21v-8a14 14 0 0128 0v8" fill="#fffdf8"/></g><path d="M180 49h22m-22 20h13" stroke="#d6ab8b" stroke-dasharray="5 5"/>',
     스킬: '<circle cx="120" cy="70" r="39" stroke="#c5d6d7"/><path d="M124 42l-22 32h19l-5 25 25-36h-20z" fill="#fffdf8"/><path d="M153 39l8 5 3-10"/>',
     궁극기:
-      '<circle cx="120" cy="70" r="36" stroke="#ddc2a8"/><path d="M120 43l7 19 20 8-20 7-7 20-7-20-20-7 20-8z" fill="#fffdf8"/><path d="M72 42l-7-8m99 8 7-8M71 99l-7 7m100-7 7 7" stroke="#ddc2a8"/>',
+      '<circle cx="120" cy="68" r="46" stroke="#e8debd" stroke-width="13"/><circle cx="120" cy="68" r="44" stroke="#c38230" stroke-width="6"/><text x="120" y="69" dy=".35em" text-anchor="middle" fill="#513d24" stroke="none" font-family="Arial,sans-serif" font-size="52" font-weight="700">Q</text><path d="M109 125h22" stroke="#c38230" stroke-width="5"/>',
     구도: '<path d="M55 109h42V84h43V56h46v53" fill="#dce3d3"/><path d="M55 109h42V84h43V56h46"/><g transform="translate(162 37)"><circle cy="-14" r="10" fill="#fffdf8"/><path d="M-14 21v-8a14 14 0 0128 0v8" fill="#fffdf8"/></g><path d="M174 43l34 17m-34-17 31 37" stroke-dasharray="3 6" stroke="#b6c4ae"/>',
   };
   return `<div class="topic-art"><svg viewBox="0 0 240 140" aria-hidden="true" focusable="false" fill="none" stroke="#607867" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">${art[q.cat] || art["구도"]}</svg><span>TOPIC / ${esc(q.cat)}</span></div>`;

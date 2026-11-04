@@ -16,7 +16,7 @@ AI가 비공개 저장소를 읽으려면 친구 계정도 저장소 접근 권�
 - `docs/question-authoring.md`: 코칭 원칙·예외·데이터 형식·검토 기준
 - `docs/ai-prompts.md`: 출제 / 검토 / 승인 후 편입 요청문
 - `templates/question.json`: 복사해서 작성하는 양식. 그대로 배포하지 않는다.
-- `questions.json`: 기존 상황 판단 문제 6개
+- `questions.json`: 상황 판단 문제 32개(기본 22개·응용 10개)
 - `scripts/validate_questions.py`: 형식·id·정답 범위 검사(외부 패키지 불필요)
 
 ## 검사
@@ -25,7 +25,7 @@ python scripts/validate_questions.py
 # 별도 초안 배열 파일 검사
 python scripts/validate_questions.py drafts/my-questions.json
 ```
-형식 검사 통과는 정답의 정확성을 보장하지 않는다. 가이드 근거와 코치의 내용 검토가 필요하다. PR에서는 자동 형식 검사를 실행한다.
+형식 검사 통과는 정답의 정확성을 보장하지 않는다. 가이드 근거와 코치의 내용 검토가 필요하다. PR에서는 문제 형식 검사, JavaScript 구문 검사와 화면 회귀 검사를 실행한다.
 
 ## 현재 진행 상태
 전체 사이트 화면 코드, 가이드 데이터, 삽화 57개와 공동 출제 자료가 이 저장소에 있다. 사이트는 루트의 questions.json을 읽는다. GitHub 수정 사항은 현재 운영 사이트에 자동 배포되지 않는다. 기존 운영 사이트는 별도로 유지된다.

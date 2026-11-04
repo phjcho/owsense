@@ -46,22 +46,32 @@ function home() {
   let art = guide[0].blocks.find((b) => b.type === "image");
   app.innerHTML = `<section class="hero"><div><div class="eyebrow">OVERWATCH · GAME SENSE LAB</div><h1>보는 눈이 달라지면,<br><em>플레이가 달라진다.</em></h1><p class="lead">영웅과 스킬은 알지만, 무엇을 해야 할지 막막하다면.<br>한 장면씩 판단하고, 다음 한타에서 써먹어보자.</p><div class="actions"><a class="btn orange" href="#question/${questions.find((q) => !saved[q.id])?.id || "regroup"}">판단 연습 시작하기 <span>↗</span></a><a class="btn light" href="#guide/0">가이드 먼저 읽기</a></div></div><div class="hero-art"><div class="art-label"><span>TEAMWORK STARTS HERE</span><span>01 / 기본기</span></div><img src="${art.src}" alt="다섯 역할의 계급과 역할을 보여주는 가이드 삽화"><div class="stamp">에임 너머의 오버워치</div></div></section><section><div class="sectionhead"><div><h2>지금, 당신의 판단은?</h2><p>상황을 읽고 → 선택하고 → 판단의 근거를 확인하세요.</p></div><a class="textlink" href="#practice">모든 연습 보기 ↗</a></div><div class="grid">${questions.slice(0, 3).map(card).join("")}</div></section><section><div class="sectionhead"><div><h2>판단의 바탕이 되는 7개 장</h2><p>함께 만든 초보자 가이드, 그림과 함께 읽어보세요.</p></div><a class="textlink" href="#guide/0">가이드 열기 ↗</a></div><div class="guide-strip">${guide.map((c) => `<a class="chapter" href="#guide/${c.id}"><span>0${c.id}</span><b>${c.title}</b></a>`).join("")}</div></section><div class="dashboard-bottom"><div class="large-num">${count}<span style="font-size:20px;color:#8c9984"> / ${questions.length}</span></div><div><b>하나씩 쌓이는 판단의 기준</b><p>학습 기록은 이 브라우저에 저장돼요. 틀린 상황도 다시 풀어볼 수 있어요.</p></div><a class="btn light" href="#practice">내 연습 이어가기 →</a></div>`;
 }
+function visibleQuestions() {
+  return questions
+    .filter(
+      (q) =>
+        difficultyFilter === "전체" ||
+        (q.difficulty || "기본") === difficultyFilter,
+    )
+    .filter(
+      (q) =>
+        filter === "전체" ||
+        q.cat === filter ||
+        (filter === "오답 복습" && saved[q.id]?.correct === false),
+    );
+}
+// 풀이 화면의 번호와 '다음 상황'이 따르는 목록. 연습 목록의 필터를 유지하고,
+// 필터에 없는 문제(직접 링크 등)는 전체 목록을 따른다.
+function questionSequence(q) {
+  const list = visibleQuestions();
+  return list.includes(q) ? list : questions;
+}
+function showError(message, detail) {
+  app.innerHTML = `<p class="empty" role="alert">${esc(message)}${detail ? `<br><small>${esc(detail)}</small>` : ""}</p>`;
+}
 function practice() {
-  app.innerHTML = `<div class="page-title"><div class="eyebrow">PRACTICE / 판단 연습</div><h1>한 장면, 하나의 판단.</h1><p class="lead">주어진 조건 안에서 가장 알맞은 선택을 찾아보세요. 선택 뒤에는 판단의 근거가 기다립니다.</p></div><div class="chips">${["전체", "인원수", "엄폐", "스킬", "궁극기", "구도", "오답 복습"].map((x) => `<button class="chip ${filter === x ? "active" : ""}" data-filter="${x}">${x}</button>`).join("")}</div><div class="difficulty-picker"><b>난이도</b><div class="chips" aria-label="난이도 선택">${["전체", "기본", "응용"].map((x) => `<button class="chip ${difficultyFilter === x ? "active" : ""}" data-level="${x}" aria-pressed="${difficultyFilter === x}">${x}</button>`).join("")}</div><small>기본 · 한 가지 기준 익히기 / 응용 · 여러 단서의 우선순위 판단하기</small></div><div class="grid">${
-    questions
-      .filter(
-        (q) =>
-          difficultyFilter === "전체" ||
-          (q.difficulty || "기본") === difficultyFilter,
-      )
-      .filter(
-        (q) =>
-          filter === "전체" ||
-          q.cat === filter ||
-          (filter === "오답 복습" && saved[q.id]?.correct === false),
-      )
-      .map(card)
-      .join("") ||
+  app.innerHTML =`<div class="page-title"><div class="eyebrow">PRACTICE / 판단 연습</div><h1>한 장면, 하나의 판단.</h1><p class="lead">주어진 조건 안에서 가장 알맞은 선택을 찾아보세요. 선택 뒤에는 판단의 근거가 기다립니다.</p></div><div class="chips">${["전체", "인원수", "엄폐", "스킬", "궁극기", "구도", "오답 복습"].map((x) => `<button class="chip ${filter === x ? "active" : ""}" data-filter="${x}">${x}</button>`).join("")}</div><div class="difficulty-picker"><b>난이도</b><div class="chips" aria-label="난이도 선택">${["전체", "기본", "응용"].map((x) => `<button class="chip ${difficultyFilter === x ? "active" : ""}" data-level="${x}" aria-pressed="${difficultyFilter === x}">${x}</button>`).join("")}</div><small>기본 · 한 가지 기준 익히기 / 응용 · 여러 단서의 우선순위 판단하기</small></div><div class="grid">${
+    visibleQuestions().map(card).join("") ||
     '<p class="empty">선택한 조건에 맞는 문제가 없어요. 주제나 난이도를 바꿔보세요.</p>'
   }</div>`;
   document.querySelectorAll("[data-filter]").forEach(
@@ -99,7 +109,10 @@ function question(id) {
     location.hash = "practice";
     return;
   }
-  app.innerHTML = `<section class="practice"><a class="back" href="#practice">← 판단 연습 목록</a><div class="sectionhead"><span class="eyebrow">SCENARIO ${String(questions.indexOf(q) + 1).padStart(2, "0")} / ${questions.length}</span><span class="tag">${esc(q.cat)}</span> <span class="tag difficulty-tag">${esc(q.difficulty || "기본")}</span></div><div class="question">${q.diagram ? participationMap(q) : ""}<h1>${esc(q.title)}</h1><p class="lead">${esc(q.context)}</p><div class="facts">${q.facts.map((x) => `<span class="fact">${esc(x)}</span>`).join("")}</div><b>지금 가장 알맞은 판단은?</b><div class="options" role="group" aria-label="답 선택">${q.options.map((x, i) => `<button class="option" data-option="${i}" aria-pressed="false"><span>0${i + 1}</span>${esc(x)}</button>`).join("")}</div><button id="check" class="btn orange" disabled style="opacity:.45">판단 확인하기 →</button><div id="question-feedback" aria-live="polite"></div></div></section>`;
+  const sequence = questionSequence(q);
+  const position = sequence.indexOf(q);
+  const nextQuestion = sequence[(position + 1) % sequence.length];
+  app.innerHTML = `<section class="practice"><a class="back" href="#practice">← 판단 연습 목록</a><div class="sectionhead"><span class="eyebrow">SCENARIO ${String(position + 1).padStart(2, "0")} / ${sequence.length}</span><span class="tag">${esc(q.cat)}</span> <span class="tag difficulty-tag">${esc(q.difficulty || "기본")}</span></div><div class="question">${q.diagram ? participationMap(q) : ""}<h1>${esc(q.title)}</h1><p class="lead">${esc(q.context)}</p><div class="facts">${q.facts.map((x) => `<span class="fact">${esc(x)}</span>`).join("")}</div><b>지금 가장 알맞은 판단은?</b><div class="options" role="group" aria-label="답 선택">${q.options.map((x, i) => `<button class="option" data-option="${i}" aria-pressed="false"><span>0${i + 1}</span>${esc(x)}</button>`).join("")}</div><button id="check" class="btn orange" disabled style="opacity:.45">판단 확인하기 →</button><div id="question-feedback" aria-live="polite"></div></div></section>`;
   const buttons = [...document.querySelectorAll("[data-option]")],
     check = document.querySelector("#check"),
     feedback = document.querySelector("#question-feedback");
@@ -132,7 +145,7 @@ function question(id) {
     });
     check.disabled = true;
     check.textContent = "판단 확인 완료";
-    feedback.innerHTML = `<div class="feedback"><h3 tabindex="-1">${selected === q.answer ? "좋아요. 중요한 단서를 찾았어요." : "이 단서를 다시 살펴보세요."}</h3><b>${esc(q.cue)}</b><p>${selected !== q.answer ? esc(q.wrong) + " " : ""}${esc(q.why)}</p><a class="textlink" href="#guide/${q.chapter}">관련 가이드 · ${q.chapter}장 ${esc(guide[q.chapter].title)} ↗</a><br><small>제시된 상황을 위한 연습입니다. 실제 판단은 거리, 지형, 남은 자원에 따라 달라집니다.</small></div><div class="actions"><button id="retry" class="btn light">다시 풀기</button><a class="btn" href="#question/${questions[(questions.indexOf(q) + 1) % questions.length].id}">다음 상황 →</a></div>`;
+    feedback.innerHTML = `<div class="feedback"><h3 tabindex="-1">${selected === q.answer ? "좋아요. 중요한 단서를 찾았어요." : "이 단서를 다시 살펴보세요."}</h3><b>${esc(q.cue)}</b><p>${selected !== q.answer ? esc(q.wrong) + " " : ""}${esc(q.why)}</p><a class="textlink" href="#guide/${q.chapter}">관련 가이드 · ${q.chapter}장 ${esc(guide[q.chapter].title)} ↗</a><br><small>제시된 상황을 위한 연습입니다. 실제 판단은 거리, 지형, 남은 자원에 따라 달라집니다.</small></div><div class="actions"><button id="retry" class="btn light">다시 풀기</button><a class="btn" href="#question/${nextQuestion.id}">다음 상황 →</a></div>`;
     feedback.querySelector("h3").focus({ preventScroll: true });
     document.querySelector("#retry").onclick = () => {
       const previous = selected;
@@ -346,28 +359,40 @@ function render() {
           (page === "guide" && a.hash === "#guide/0"),
       ),
     );
-  if (page === "guide") reader(id, part);
-  else if (page === "practice") practice();
-  else if (page === "question") question(id);
-  else if (page === "roles") rolePage();
-  else home();
+  try {
+    if (page === "guide") reader(id, part);
+    else if (page === "practice") practice();
+    else if (page === "question") question(id);
+    else if (page === "roles") rolePage();
+    else home();
+  } catch (error) {
+    console.error(error);
+    showError(
+      "화면을 불러오는 중 문제가 생겼어요. 페이지를 새로고침해주세요.",
+      error.message,
+    );
+  }
   window.scrollTo(0, 0);
 }
-Promise.all([
-  fetch("guide.json").then((r) => r.json()),
-  fetch("questions.json").then((r) => r.json()),
-])
+const loadJson = (url) =>
+  fetch(url).then((r) => {
+    if (!r.ok) throw new Error(`${url} 불러오기 실패 (${r.status})`);
+    return r.json();
+  });
+Promise.all([loadJson("guide.json"), loadJson("questions.json")])
   .then(([d, q]) => {
     guide = d;
     questions = q;
-    render();
     addEventListener("hashchange", render);
+    render();
   })
-  .catch(
-    () =>
-      (app.innerHTML =
-        "<p>가이드를 불러오지 못했어요. 페이지를 새로고침해주세요.</p>"),
-  );
+  .catch((error) => {
+    console.error(error);
+    showError(
+      "가이드를 불러오지 못했어요. 페이지를 새로고침해주세요.",
+      error.message,
+    );
+  });
 document.addEventListener("click", (e) => {
   const a = e.target.closest("a");
   if (

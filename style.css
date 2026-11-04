@@ -1031,3 +1031,31 @@ footer small {
 .grid > .card .card-body h3 {
   min-height: 57px;
 }
+
+.sidebar .search-scope {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 12px;
+  color: var(--muted);
+  margin: -6px 0 18px;
+}
+.sidebar .search-scope input {
+  width: 16px;
+  height: 16px;
+  margin: 0;
+  accent-color: var(--orange);
+}
+.article .search-result h2 {
+  font-size: 19px;
+  margin: 8px 0;
+}
+.article .search-result p {
+  font-size: 13px;
+  line-height: 1.8;
+  margin: 6px 0;
+}
+.article [id],
+.role-guide [id] {
+  scroll-margin-top: 24px;
+}

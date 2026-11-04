@@ -1679,3 +1679,12 @@ footer small {
     transition: none;
   }
 }
+
+/* Team color identifies allies / opponents; only these marks identify sides. */
+.match-side-icon { width: 20px; height: 20px; flex: 0 0 20px; }
+.match-side-icon.attack { color: #ef4060; }
+.match-side-icon.defense { color: #00bcee; }
+.match-side-options span { display: flex; align-items: center; justify-content: center; gap: 7px; }
+.match-team-heading h2 { display: flex; align-items: center; flex-wrap: wrap; gap: 10px; }
+.match-side-badge { display: inline-flex; align-items: center; gap: 5px; padding: 4px 8px; border: 1px solid #667683; border-radius: 4px; background: #102130; color: #fff; font-size: 12px; font-weight: 700; white-space: nowrap; }
+.match-side-badge[hidden] { display: none; }

@@ -1,9 +1,9 @@
-name: Validate questions
+name: Validate learning content
 on:
   push:
-    paths: ['questions.json', 'scripts/validate_questions.py', '.github/workflows/validate-questions.yml']
+    paths: ['questions.json', 'app.js', 'guide.json', 'style.css', 'scripts/**', 'docs/question-authoring.md', '.github/workflows/validate-questions.yml']
   pull_request:
-    paths: ['questions.json', 'scripts/validate_questions.py', '.github/workflows/validate-questions.yml']
+    paths: ['questions.json', 'app.js', 'guide.json', 'style.css', 'scripts/**', 'docs/question-authoring.md', '.github/workflows/validate-questions.yml']
 permissions:
   contents: read
 jobs:
@@ -14,4 +14,9 @@ jobs:
       - uses: actions/setup-python@v5
         with:
           python-version: '3.12'
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
       - run: python scripts/validate_questions.py
+      - run: node --check app.js
+      - run: node scripts/test_ui.cjs

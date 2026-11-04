@@ -431,6 +431,11 @@ const matchMaps = [
     sided: true,
   },
 ];
+const matchRoleIcons = {
+  "tank": "<svg viewBox=\"0 0 48 48\" width=\"32\" height=\"32\" fill=\"currentColor\" aria-hidden=\"true\" focusable=\"false\" style=\"display:block\"><path d=\"M24 3C17 3 10 5 6 7v15c0 9 9 18 18 23 9-5 18-14 18-23V7c-4-2-11-4-18-4Z\"/></svg>",
+  "damage": "<svg viewBox=\"0 0 48 48\" width=\"32\" height=\"32\" fill=\"currentColor\" aria-hidden=\"true\" focusable=\"false\" style=\"display:block\"><path d=\"M7 2C3 6 2 10 2 16v21h11V16c0-6-1-10-6-14Zm17 0c-4 4-5 8-5 14v21h11V16c0-6-1-10-6-14Zm17 0c-4 4-5 8-5 14v21h10V16c0-6-1-10-5-14Z\"/><path d=\"M2 41h11v6H2zm17 0h11v6H19zm17 0h10v6H36z\"/></svg>",
+  "support": "<svg viewBox=\"0 0 48 48\" width=\"32\" height=\"32\" fill=\"currentColor\" aria-hidden=\"true\" focusable=\"false\" style=\"display:block\"><path d=\"M18 3h12a3 3 0 0 1 3 3v9h9a3 3 0 0 1 3 3v12a3 3 0 0 1-3 3h-9v9a3 3 0 0 1-3 3H18a3 3 0 0 1-3-3v-9H6a3 3 0 0 1-3-3V18a3 3 0 0 1 3-3h9V6a3 3 0 0 1 3-3Z\"/></svg>"
+};
 const matchSlots = [
   { role: "tank", label: "탱커" },
   { role: "damage", label: "딜러 1" },
@@ -520,7 +525,7 @@ function matchPage() {
       .map((h) => `<option value="${h.id}">${esc(h.name)}</option>`)
       .join("");
   const teamHTML = (team) =>
-    `<section class="match-team ${team}" aria-labelledby="${team}-title"><div class="match-team-heading"><div><span class="eyebrow">${team === "ally" ? "OUR TEAM" : "OPPONENTS"}</span><h2 id="${team}-title">${team === "ally" ? "우리 팀" : "상대 팀"}</h2></div><span class="match-team-count" id="${team}-count">0 / 5</span></div>${matchSlots.map((slot, i) => `<div class="match-slot"><label for="${team}-${i}" class="match-slot-label">${slot.label}</label><div class="match-hero-field"><span class="match-portrait" id="portrait-${team}-${i}" aria-hidden="true">${slot.role === "tank" ? "◆" : slot.role === "damage" ? "▥" : "+"}</span><select id="${team}-${i}" data-team="${team}" data-slot="${i}"><option value="">영웅 선택</option>${options(slot.role)}</select></div>${team === "ally" ? `<label class="match-me"><input type="radio" name="match-me" value="${i}" aria-label="내 영웅: ${slot.label}"><span>나</span></label>` : ""}</div>`).join("")}<p class="match-team-note">${team === "ally" ? "내가 플레이할 영웅 옆에 ‘나’를 표시하세요." : "우리 팀과 같은 영웅도 선택할 수 있어요."}</p></section>`;
+    `<section class="match-team ${team}" aria-labelledby="${team}-title"><div class="match-team-heading"><div><span class="eyebrow">${team === "ally" ? "OUR TEAM" : "OPPONENTS"}</span><h2 id="${team}-title">${team === "ally" ? "우리 팀" : "상대 팀"}</h2></div><span class="match-team-count" id="${team}-count">0 / 5</span></div>${matchSlots.map((slot, i) => `<div class="match-slot"><label for="${team}-${i}" class="match-slot-label">${slot.label}</label><div class="match-hero-field"><span class="match-portrait" id="portrait-${team}-${i}" aria-hidden="true">${matchRoleIcons[slot.role]}</span><select id="${team}-${i}" data-team="${team}" data-slot="${i}"><option value="">영웅 선택</option>${options(slot.role)}</select></div>${team === "ally" ? `<label class="match-me"><input type="radio" name="match-me" value="${i}" aria-label="내 영웅: ${slot.label}"><span>나</span></label>` : ""}</div>`).join("")}<p class="match-team-note">${team === "ally" ? "내가 플레이할 영웅 옆에 ‘나’를 표시하세요." : "우리 팀과 같은 영웅도 선택할 수 있어요."}</p></section>`;
   app.innerHTML = `<div class="page-title match-page-title"><div class="eyebrow">MATCH PLANNER / 운영과 복기 <span class="match-beta">BETA</span></div><h1>이번 판, 어떤 조합인가요?</h1><p class="lead">맵과 양 팀의 영웅을 골라 이번 판을 정리해보세요.</p><p class="match-beta-note">지금은 정보 입력 단계만 사용할 수 있어요. 조합별 운영 안내와 복기는 준비 중이에요.</p></div><form id="match-form" novalidate><section class="match-map-stage" aria-labelledby="match-map-title"><div class="match-map-content"><div><span class="eyebrow">01 / BATTLEGROUND</span><h2 id="match-map-title">이번 판의 맵은?</h2><p id="match-map-caption">맵은 나중에 선택해도 괜찮아요.</p></div><div class="match-map-controls"><label for="match-map">맵 <small>선택 사항</small></label><select id="match-map"><option value="">맵 선택 안 함</option>${[
     "혼합",
     "호위",
@@ -573,12 +578,7 @@ function matchPage() {
         const hero = matchHeroes.find((h) => h.id === id);
         if (portrait.dataset.hero === id) return;
         portrait.dataset.hero = id;
-        portrait.textContent =
-          matchSlots[i].role === "tank"
-            ? "◆"
-            : matchSlots[i].role === "damage"
-              ? "▥"
-              : "+";
+        portrait.innerHTML = matchRoleIcons[matchSlots[i].role];
         if (hero) {
           const img = document.createElement("img");
           img.src = hero.portrait;

@@ -997,36 +997,37 @@ footer small {
   color: #8b512e;
 }
 
-.scene-clues {
-  height: auto;
-  min-height: 150px;
-  display: block;
-  padding: 16px;
+.topic-art {
+  height: 145px;
+  background: #edf0e7;
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
 }
-.clue-grid {
-  display: grid;
-  grid-template-columns: repeat(3, minmax(0, 1fr));
-  gap: 8px;
-  margin-top: 12px;
+.topic-art svg {
+  height: 140px;
+  width: 240px;
+  max-width: 100%;
 }
-.clue-tile {
-  padding: 10px;
-  background: #fffdf8;
-  border: 1px solid var(--line);
-  border-radius: 6px;
-  line-height: 1.6;
-}
-.clue-tile span {
-  display: block;
+.topic-art > span {
+  position: absolute;
+  bottom: 8px;
+  left: 16px;
+  font-size: 9px;
+  letter-spacing: 1.3px;
   color: var(--muted);
-  font-size: 10px;
 }
-.clue-tile b {
-  font-size: 12px;
-  overflow-wrap: anywhere;
+.grid > .card .card-body > p {
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+  min-height: 44px;
 }
-@media (max-width: 600px) {
-  .question .clue-grid {
-    grid-template-columns: 1fr;
-  }
+.grid > .card .card-body {
+  padding: 22px;
+}
+.grid > .card .card-body h3 {
+  min-height: 57px;
 }

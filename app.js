@@ -70,7 +70,7 @@ function showError(message, detail) {
   app.innerHTML = `<p class="empty" role="alert">${esc(message)}${detail ? `<br><small>${esc(detail)}</small>` : ""}</p>`;
 }
 function practice() {
-  app.innerHTML =`<div class="page-title"><div class="eyebrow">PRACTICE / 판단 연습</div><h1>한 장면, 하나의 판단.</h1><p class="lead">주어진 조건 안에서 가장 알맞은 선택을 찾아보세요. 선택 뒤에는 판단의 근거가 기다립니다.</p></div><div class="chips">${["전체", "인원수", "엄폐", "스킬", "궁극기", "구도", "오답 복습"].map((x) => `<button class="chip ${filter === x ? "active" : ""}" data-filter="${x}">${x}</button>`).join("")}</div><div class="difficulty-picker"><b>난이도</b><div class="chips" aria-label="난이도 선택">${["전체", "기본", "응용"].map((x) => `<button class="chip ${difficultyFilter === x ? "active" : ""}" data-level="${x}" aria-pressed="${difficultyFilter === x}">${x}</button>`).join("")}</div><small>기본 · 한 가지 기준 익히기 / 응용 · 여러 단서의 우선순위 판단하기</small></div><div class="grid">${
+  app.innerHTML = `<div class="page-title"><div class="eyebrow">PRACTICE / 판단 연습</div><h1>한 장면, 하나의 판단.</h1><p class="lead">주어진 조건 안에서 가장 알맞은 선택을 찾아보세요. 선택 뒤에는 판단의 근거가 기다립니다.</p></div><div class="chips">${["전체", "인원수", "엄폐", "스킬", "궁극기", "구도", "오답 복습"].map((x) => `<button class="chip ${filter === x ? "active" : ""}" data-filter="${x}">${x}</button>`).join("")}</div><div class="difficulty-picker"><b>난이도</b><div class="chips" aria-label="난이도 선택">${["전체", "기본", "응용"].map((x) => `<button class="chip ${difficultyFilter === x ? "active" : ""}" data-level="${x}" aria-pressed="${difficultyFilter === x}">${x}</button>`).join("")}</div><small>기본 · 한 가지 기준 익히기 / 응용 · 여러 단서의 우선순위 판단하기</small></div><div class="grid">${
     visibleQuestions().map(card).join("") ||
     '<p class="empty">선택한 조건에 맞는 문제가 없어요. 주제나 난이도를 바꿔보세요.</p>'
   }</div>`;
@@ -189,6 +189,92 @@ function sliceGuideSection(blocks, startTitle, endTitle) {
   if (end <= start) throw new Error("가이드 소단원 순서가 올바르지 않습니다.");
   return blocks.slice(start, end);
 }
+
+function guideAnchor(title) {
+  let hash = 2166136261;
+  for (const c of title) hash = Math.imul(hash ^ c.codePointAt(0), 16777619);
+  return "section-" + (hash >>> 0).toString(36);
+}
+function guideSectionRoute(ch, index) {
+  const block = ch.blocks[index],
+    anchor = guideAnchor(block.text);
+  if (ch.id !== 5) return "#guide/" + ch.id + "/0/" + anchor;
+  const blocks = ch.blocks;
+  const position = (title) =>
+    blocks.findIndex((b) => b.type === "heading" && b.text === title);
+  const rolesStart = position("기본 역할군 가이드");
+  const rolesEnd = position("지금 영웅으로 그 역할을 할 수 있을까");
+  if (index >= rolesStart && index < rolesEnd) {
+    let role = null;
+    for (let i = rolesStart; i <= index; i++) {
+      const match =
+        blocks[i].type === "heading" && blocks[i].text.match(/^([1-5]) /);
+      if (match) role = Number(match[1]) - 1;
+    }
+    return role === null ? "#roles" : "#roles/" + role + "/" + anchor;
+  }
+  let part = chapterFiveParts.findIndex((p) => {
+    const start = position(p[1]),
+      end = p[2] === null ? blocks.length : position(p[2]);
+    return index >= start && index < end;
+  });
+  if (
+    index >= rolesEnd &&
+    index < position("참고 · 중복 포지션 조합의 강점과 비용")
+  )
+    part = 2;
+  return "#guide/5/" + Math.max(0, part) + "/" + anchor;
+}
+function searchGuide(query, includeBody = false) {
+  const term = query.trim().toLocaleLowerCase();
+  if (!term) return [];
+  const hits = [];
+  for (const ch of guide) {
+    if (ch.title.toLocaleLowerCase().includes(term))
+      hits.push({
+        chapter: ch.id,
+        title: ch.title,
+        excerpt: "장 전체 보기",
+        href: "#guide/" + ch.id,
+        score: ch.title.toLocaleLowerCase() === term ? -2 : -1,
+      });
+    ch.blocks.forEach((b, index) => {
+      if (b.type !== "heading" || index === 0) return;
+      let end = index + 1;
+      while (end < ch.blocks.length && ch.blocks[end].type !== "heading") end++;
+      const body = ch.blocks
+        .slice(index + 1, end)
+        .map(
+          (x) => x.text || x.rows?.map((row) => row.join(" ")).join(" ") || "",
+        )
+        .join(" ");
+      const title = b.text.toLocaleLowerCase(),
+        bodyMatch = body.toLocaleLowerCase().indexOf(term);
+      if (!title.includes(term) && !(includeBody && bodyMatch >= 0)) return;
+      const offset = title.includes(term) ? 0 : Math.max(0, bodyMatch - 30);
+      const excerpt =
+        (offset ? "…" : "") +
+        body.slice(offset, offset + 110) +
+        (body.length > offset + 110 ? "…" : "");
+      hits.push({
+        chapter: ch.id,
+        title: b.text,
+        excerpt,
+        href: guideSectionRoute(ch, index),
+        score:
+          title === term
+            ? 0
+            : title.startsWith(term)
+              ? 1
+              : title.includes(term)
+                ? 2
+                : 3,
+      });
+    });
+  }
+  return hits.sort((a, b) => a.score - b.score || a.chapter - b.chapter);
+}
+
 function reader(id, part) {
   let c = guide[+id] || guide[0];
   const isFive = c.id === 5;
@@ -214,28 +300,35 @@ function reader(id, part) {
       ];
     c = { ...c, title: p[0], blocks };
   }
-  app.innerHTML = `<div class="reader"><aside class="sidebar"><div class="eyebrow">THE BEGINNER'S GUIDE</div><p><b>오버워치 초보자 가이드</b></p><input id="search" type="search" placeholder="가이드에서 검색" aria-label="가이드 검색"><div class="sidebar-links">${guide.map((x) => `<a class="${c.id === x.id ? "active" : ""}" href="#guide/${x.id}">${x.id}장 · ${x.title}</a>${isFive && x.id === 5 ? `<div class="chapter-subnav">${chapterFiveParts.map((p, i) => `<a class="${i === partIndex ? "active" : ""}" href="#guide/5/${i}" ${i === partIndex ? 'aria-current="page"' : ""}>${p[0]}</a>`).join("")}</div>` : ""}`).join("")}</div></aside><article class="article" id="article"><div class="eyebrow">CHAPTER 0${c.id}</div><h1>${c.title}</h1>${isFive && partIndex === 3 ? '<div class="actions"><a class="btn orange" href="#roles">내 역할 선택하기 →</a></div>' : ""}${c.blocks.map((b, i) => (b.type === "image" ? `<img src="${b.src}" alt="${esc(b.alt)}" loading="lazy">` : b.type === "table" ? `<table>${b.rows.map((row) => "<tr>" + row.map((t) => `<td>${esc(t)}</td>`).join("") + "</tr>").join("")}</table>` : b.type === "heading" ? (i === 0 ? "" : `<h2>${esc(b.text)}</h2>`) : `<p>${esc(b.text)}</p>`)).join("")}<div class="actions"><a class="btn orange" href="#practice">배운 내용으로 연습하기 ↗</a>${isFive ? `${partIndex > 0 ? `<a class="btn light" href="#guide/5/${partIndex - 1}">← 이전 · ${chapterFiveParts[partIndex - 1][0]}</a>` : ""}${partIndex < 4 ? `<a class="btn light" href="#guide/5/${partIndex + 1}">다음 · ${chapterFiveParts[partIndex + 1][0]} →</a>` : '<a class="btn light" href="#guide/6">다음 장 · 궁극기 →</a>'}` : c.id < 6 ? `<a class="btn light" href="#guide/${c.id + 1}">다음 장 →</a>` : ""}</div></article></div>`;
-  document.querySelector("#search").oninput = (e) => {
-    let term = e.target.value.trim();
+  app.innerHTML = `<div class="reader"><aside class="sidebar"><div class="eyebrow">THE BEGINNER'S GUIDE</div><p><b>오버워치 초보자 가이드</b></p><input id="search" type="search" placeholder="가이드에서 검색" aria-label="가이드 검색"><label class="search-scope"><input id="search-body" type="checkbox">본문까지 검색</label><div class="sidebar-links">${guide.map((x) => `<a class="${c.id === x.id ? "active" : ""}" href="#guide/${x.id}">${x.id}장 · ${x.title}</a>${isFive && x.id === 5 ? `<div class="chapter-subnav">${chapterFiveParts.map((p, i) => `<a class="${i === partIndex ? "active" : ""}" href="#guide/5/${i}" ${i === partIndex ? 'aria-current="page"' : ""}>${p[0]}</a>`).join("")}</div>` : ""}`).join("")}</div></aside><article class="article" id="article"><div class="eyebrow">CHAPTER 0${c.id}</div><h1 id="${guideAnchor(c.blocks[0]?.type === "heading" ? c.blocks[0].text : c.title)}">${esc(c.title)}</h1>${isFive && partIndex === 3 ? '<div class="actions"><a class="btn orange" href="#roles">내 역할 선택하기 →</a></div>' : ""}${c.blocks.map((b, i) => (b.type === "image" ? `<img src="${b.src}" alt="${esc(b.alt)}" loading="lazy">` : b.type === "table" ? `<table>${b.rows.map((row) => "<tr>" + row.map((t) => `<td>${esc(t)}</td>`).join("") + "</tr>").join("")}</table>` : b.type === "heading" ? (i === 0 ? "" : `<h2 id="${guideAnchor(b.text)}">${esc(b.text)}</h2>`) : `<p>${esc(b.text)}</p>`)).join("")}<div class="actions"><a class="btn orange" href="#practice">배운 내용으로 연습하기 ↗</a>${isFive ? `${partIndex > 0 ? `<a class="btn light" href="#guide/5/${partIndex - 1}">← 이전 · ${chapterFiveParts[partIndex - 1][0]}</a>` : ""}${partIndex < 4 ? `<a class="btn light" href="#guide/5/${partIndex + 1}">다음 · ${chapterFiveParts[partIndex + 1][0]} →</a>` : '<a class="btn light" href="#guide/6">다음 장 · 궁극기 →</a>'}` : c.id < 6 ? `<a class="btn light" href="#guide/${c.id + 1}">다음 장 →</a>` : ""}</div></article></div>`;
+  const searchInput = document.querySelector("#search");
+  const scope = document.querySelector("#search-body");
+  const article = document.querySelector("#article");
+  const originalArticle = article.innerHTML;
+  const runSearch = () => {
+    const term = searchInput.value.trim();
     if (!term) {
-      reader(id, part);
-      document.querySelector("#search").focus();
+      article.innerHTML = originalArticle;
       return;
     }
-    let hits = guide.flatMap((ch) =>
-      ch.blocks.filter((b) => b.text?.includes(term)).map((b) => ({ ch, b })),
-    );
-    document.querySelector("#article").innerHTML =
-      `<h1>검색 결과</h1><p>“${esc(term)}” · ${hits.length}개</p>` +
-      hits
-        .slice(0, 40)
+    const hits = searchGuide(term, scope.checked);
+    article.innerHTML =
+      `<h1>검색 결과</h1><p class="search-summary" role="status">“${esc(term)}” · ${hits.length}개 · ${scope.checked ? "제목과 본문" : "제목·소제목"}</p>` +
+      (hits
         .map(
-          ({ ch, b }) =>
-            `<a class="search-result" href="#guide/${ch.id}"><span class="tag">${ch.id}장 ${ch.title}</span><p>${esc(b.text)}</p></a>`,
+          (hit) =>
+            `<a class="search-result" href="${hit.href}"><span class="tag">${hit.chapter}장</span><h2>${esc(hit.title)}</h2>${hit.excerpt ? `<p>${esc(hit.excerpt)}</p>` : ""}</a>`,
         )
-        .join("");
+        .join("") ||
+        '<p class="empty">일치하는 제목이 없어요. 다른 검색어를 입력하거나 본문까지 검색해보세요.</p>');
   };
+  searchInput.oninput = (e) => {
+    if (!e.isComposing) runSearch();
+  };
+  searchInput.oncompositionend = runSearch;
+  scope.onchange = runSearch;
 }
+
 const roles = [
   [
     "탱커",
@@ -325,7 +418,7 @@ function rolePage() {
   const content = blocks.slice(start + 1, end);
   const r = roles[idx];
   document.querySelector("#role-content").innerHTML =
-    `<div class="role-detail"><section class="article role-guide"><span class="eyebrow">01 / 역할군 가이드</span><h2>${labels[idx]} — ${r[1]}</h2>${content.map((b) => (b.type === "image" ? `<img src="${b.src}" alt="${esc(b.alt)}" loading="eager" fetchpriority="high" decoding="async">` : b.type === "heading" ? `<h3>${esc(b.text)}</h3>` : `<p>${esc(b.text || "")}</p>`)).join("")}</section><aside class="role-tasks card"><div class="card-body"><span class="eyebrow">02 / 이번 한타</span><h2>이번 한타, 내 할 일은?</h2><p>싸우기 전과 싸운 뒤, 하나씩 확인해보세요.</p>${r[2].map((t, j) => `<label class="check"><input type="checkbox" data-check="role-${idx}-${j}" ${saved["role-" + idx + "-" + j] ? "checked" : ""}><span>${t}</span></label>`).join("")}<small>체크는 이 브라우저에 남아요. 다음 한타 전 새로 시작하세요.</small><button id="new-fight" class="btn light" style="margin-top:16px">새 한타 시작</button><p id="fight-reset-status" role="status" style="font-size:12px"></p><div class="actions"><a class="btn light" href="#guide/5">바퀴벌레론 읽기 ↗</a></div></div></aside></div>`;
+    `<div class="role-detail"><section class="article role-guide"><span class="eyebrow">01 / 역할군 가이드</span><h2 id="${guideAnchor(blocks[start].text)}">${labels[idx]} — ${r[1]}</h2>${content.map((b) => (b.type === "image" ? `<img src="${b.src}" alt="${esc(b.alt)}" loading="eager" fetchpriority="high" decoding="async">` : b.type === "heading" ? `<h3 id="${guideAnchor(b.text)}">${esc(b.text)}</h3>` : `<p>${esc(b.text || "")}</p>`)).join("")}</section><aside class="role-tasks card"><div class="card-body"><span class="eyebrow">02 / 이번 한타</span><h2>이번 한타, 내 할 일은?</h2><p>싸우기 전과 싸운 뒤, 하나씩 확인해보세요.</p>${r[2].map((t, j) => `<label class="check"><input type="checkbox" data-check="role-${idx}-${j}" ${saved["role-" + idx + "-" + j] ? "checked" : ""}><span>${t}</span></label>`).join("")}<small>체크는 이 브라우저에 남아요. 다음 한타 전 새로 시작하세요.</small><button id="new-fight" class="btn light" style="margin-top:16px">새 한타 시작</button><p id="fight-reset-status" role="status" style="font-size:12px"></p><div class="actions"><a class="btn light" href="#guide/5">바퀴벌레론 읽기 ↗</a></div></div></aside></div>`;
   document.querySelectorAll("[data-check]").forEach(
     (x) =>
       (x.onchange = () => {
@@ -348,7 +441,7 @@ function rolePage() {
 function render() {
   selected = null;
   answered = false;
-  let [page, id, part] = (location.hash.slice(1) || "home").split("/");
+  let [page, id, part, anchor] = (location.hash.slice(1) || "home").split("/");
   document
     .querySelectorAll("nav a")
     .forEach((a) =>
@@ -373,6 +466,9 @@ function render() {
     );
   }
   window.scrollTo(0, 0);
+  const target = page === "roles" ? part : anchor;
+  if (target)
+    document.getElementById(target)?.scrollIntoView({ block: "start" });
 }
 const loadJson = (url) =>
   fetch(url).then((r) => {

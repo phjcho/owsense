@@ -1059,3 +1059,62 @@ footer small {
 .role-guide [id] {
   scroll-margin-top: 24px;
 }
+
+.sidebar .search-tools {
+  margin: 0 0 20px;
+}
+.sidebar .search-tools .search-scope {
+  display: inline-flex;
+  align-items: center;
+  justify-content: flex-start;
+  gap: 8px;
+  margin: 0;
+  min-height: 32px;
+  max-width: 100%;
+  color: var(--ink);
+  font-size: 13px;
+}
+.sidebar .search-tools input[type="checkbox"] {
+  display: inline-block;
+  flex: 0 0 16px;
+  width: 16px;
+  height: 16px;
+  min-width: 16px;
+  margin: 0;
+  padding: 0;
+  border-radius: 0;
+  background: initial;
+  vertical-align: middle;
+  accent-color: var(--orange);
+}
+.sidebar .search-scope span {
+  display: inline;
+  white-space: nowrap;
+}
+.sidebar .search-tools p {
+  margin: 4px 0 0;
+  font-size: 11px;
+  line-height: 1.6;
+  color: var(--muted);
+}
+
+.sidebar .guide-search-form {
+  display: flex;
+  align-items: stretch;
+  gap: 6px;
+  margin-bottom: 10px;
+}
+.sidebar .guide-search-form input {
+  flex: 1;
+  min-width: 0;
+  margin: 0;
+}
+.sidebar .guide-search-form button {
+  flex: 0 0 auto;
+  padding: 8px 10px;
+  border: 1px solid var(--line);
+  border-radius: 4px;
+  background: var(--ink);
+  color: var(--paper);
+  font-size: 12px;
+}

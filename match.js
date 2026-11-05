@@ -443,6 +443,130 @@ const matchSlots = [
   { role: "support", label: "힐러 1" },
   { role: "support", label: "힐러 2" },
 ];
+// Guide-specific rules agreed with the guide author; not a live patch tier list.
+const matchHealingTiers = [
+  ["ana", "kiriko", "doctrine", "juno", "baptiste", "moira"],
+  ["wuyang", "jetpack-cat", "illari", "mercy"],
+  ["lifeweaver", "lucio", "sombra", "mizuki", "brigitte"],
+  ["zenyatta"],
+];
+const matchSnipers = ["widowmaker", "hanzo"];
+const matchMainDamage = ["sojourn", "soldier-76", "cassidy", "ashe", "freja", "sierra", "emre", "bastion", ...matchSnipers];
+const matchInfiltrators = ["genji", "tracer", "venture", "echo", "shion", "anran", "vendetta", "reaper", "jetpack-cat"];
+const matchTankThreats = ["mei", "symmetra", "vendetta"];
+const matchTankFirepower = ["reaper", "bastion", "mauga"];
+// [advantaged tank, disadvantaged tank]. Unlisted pairs have no assigned verdict.
+const matchTankAdvantages = [
+  ["winston", "zarya"], ["zarya", "dva"], ["dva", "winston"],
+  ["orisa", "reinhardt"], ["orisa", "ramattra"], ["orisa", "doomfist"],
+  ["mauga", "winston"], ["roadhog", "doomfist"],
+  ["reinhardt", "zarya"], ["reinhardt", "sigma"], ["reinhardt", "domina"],
+  ["ramattra", "reinhardt"], ["ramattra", "sigma"], ["ramattra", "domina"],
+  ["orisa", "roadhog"], ["junker-queen", "winston"],
+  ["orisa", "hazard"], ["ramattra", "dva"],
+];
+function matchHealingDuty(ids) {
+  const tiers = ids.map(id => matchHealingTiers.findIndex(tier => tier.includes(id)));
+  if (tiers.some(tier => tier < 0)) return { kind: "unknown", ids };
+  if (tiers.every(tier => tier === 0)) return { kind: "doubleFlex", ids };
+  if (tiers[0] === tiers[1]) return { kind: "shared", ids, tiers };
+  const lead = tiers[0] < tiers[1] ? 0 : 1;
+  return { kind: "split", main: ids[lead], side: ids[1 - lead], tiers };
+}
+function matchAnalysis(state) {
+  const me = matchHeroes.find(h => h.id === state.ally[state.mine]);
+  const vulnerable = me?.role === "support" || matchMainDamage.includes(me?.id);
+  const alerts = [];
+  const add = (kind, pool) => {
+    const ids = state.enemy.filter(id => pool.includes(id));
+    if (ids.length) alerts.push({ kind, ids });
+  };
+  const supports = state.ally.slice(3, 5);
+  if (supports.every(id => id && !matchHealingTiers[0].includes(id))) {
+    alerts.push({ kind: "lowHealing", ids: supports });
+  }
+  const healing = matchHealingDuty(supports);
+  const mainSupport = me?.role === "support" && (healing.kind === "split"
+    ? healing.side === me.id
+    : healing.kind === "shared");
+  if (mainSupport) add("protect", matchInfiltrators.filter(id => matchHeroes.some(hero => hero.id === id && hero.role === "damage")));
+  else if (vulnerable) add("infiltration", matchInfiltrators);
+  add("sniper", matchSnipers);
+  add("ranged", ["freja"]);
+  if (me?.role === "tank") {
+    add("firepower", matchTankFirepower);
+    add("tank", matchTankThreats);
+  }
+  let targets = null;
+  if (me?.role === "damage" && !matchMainDamage.includes(me.id)) {
+    targets = state.enemy.filter(id => matchMainDamage.includes(id) || matchHealingTiers[0].includes(id));
+  }
+  const ally = state.ally[0], enemy = state.enemy[0];
+  const tank = ally === enemy ? "mirror" :
+    matchTankAdvantages.some(([a, b]) => a === ally && b === enemy) ? "advantage" :
+    matchTankAdvantages.some(([a, b]) => a === enemy && b === ally) ? "disadvantage" : "unlisted";
+  return { alerts, tank, healing, targets };
+}
+function matchAnalysisHTML(state) {
+  const result = matchAnalysis(state);
+  const name = id => matchHeroes.find(h => h.id === id)?.name || id;
+  const portraits = ids => `<div class="match-advice-heroes">${ids.map(id => {
+    const hero = matchHeroes.find(h => h.id === id);
+    return `<span><img src="${hero.portrait}" alt="" loading="lazy" onerror="this.hidden=true">${esc(hero.name)}</span>`;
+  }).join("")}</div>`;
+  const protectTargets = state.ally.filter((id, slot) =>
+    (slot >= 3 && slot !== state.mine) || matchMainDamage.includes(id));
+  const alertCopy = {
+    protect: ["침투하는 상대 딜러로부터 우리 팀을 지켜주세요!", `우리 팀 ${protectTargets.map(id => esc(name(id))).join("·")} 쪽으로 상대가 들어오는지 살펴보세요. 상대를 미리 견제해서 아군에게 붙지 못하게 막아주세요. 그래도 아군이 물리면 바로 힐이나 보호 스킬을 줄 수 있는 자리를 잡으세요.`],
+    lowHealing: ["힐이 부족해요!", [3, 4].includes(state.mine)
+      ? "힐러 조합 변경을 추천해요. 두 힐러 중 한 명이 아나·키리코·독트린·주노·바티스트·모이라 중 하나를 맡으면 본대 힐을 보강할 수 있어요."
+      : "교전이 길어지면 아군 힐이 들어오는 피해를 따라가기 어려워요. 체력이 빠지면 엄폐물 뒤에서 회복한 뒤 다시 싸우세요."],
+    infiltration: ["침투하는 상대를 조심하세요!", "나를 노리고 옆이나 뒤로 들어올 수 있어요. 위치를 확인하고, 아군의 보호를 받을 수 있는 거리를 유지하세요."],
+    sniper: ["상대 팀에 저격수가 있어요!", "저격수의 위치를 주시하세요. 엄폐물 밖으로 나가기 전에 그 자리에서 내가 보일지 먼저 확인하세요."],
+    ranged: ["상대 팀에 원거리 위협이 있어요!", "프레야가 어느 각에서 쏘는지 확인하고, 열린 곳을 건널 때는 엄폐물을 끼고 이동하세요."],
+    firepower: ["탱커도 순식간에 녹을 수 있어요!", "이 상대의 공격을 정면에서 계속 맞으면 체력이 순식간에 빠져요. 엄폐물 가까이에서 싸우고, 화력이 나에게 쏠리면 잠깐 몸을 숨기세요."],
+    tank: ["가까이 붙는 딜러를 조심하세요!", "위 영웅들은 탱커를 근거리에서 압박해요. 특히 뚜벅이 탱커는 더 주의하고, 아군 지원과 빠질 길을 확인하세요."],
+  };
+  const alerts = result.alerts.map(({kind, ids}) => `<article class="match-advice-card warning"><span class="eyebrow">${(["ranged", "sniper", "lowHealing"].includes(kind)) ? "우리 팀 모두 주의" : "내가 주의할 상대"}</span><h3>${alertCopy[kind][0]}</h3>${portraits(ids)}<p>${alertCopy[kind][1]}</p></article>`).join("");
+  let targetCard = "";
+  if (["reaper", "vendetta"].includes(state.ally[state.mine])) {
+    const tank = state.enemy[0];
+    const backline = result.targets.length ? result.targets : state.enemy.slice(3, 5);
+    const names = backline.map(id => esc(name(id))).join("·");
+    targetCard = `<article class="match-advice-card"><span class="eyebrow">내가 노릴 상대</span><h3>이번 한타에서 누구를 압박할까요?</h3>${portraits([tank, ...backline])}<p>상대 탱커를 가까이서 압박하며 킬각도 볼 수 있어요. ${names} 중 보호를 받기 어려운 상대가 보이면 사이드에서 파고들 기회예요.</p></article>`;
+  } else if (result.targets) {
+    const primary = result.targets.length > 0;
+    const ids = primary ? result.targets : state.enemy.slice(3, 5);
+    const roles = [];
+    if (ids.some(id => matchMainDamage.includes(id))) roles.push("메인딜");
+    if (ids.some(id => matchHealingTiers[0].includes(id))) roles.push("섭힐");
+    const title = primary ? `상대 ${roles.join("·")}을 먼저 노리세요!` : "상대 힐러 중 혼자 있는 영웅을 노리세요!";
+    targetCard = `<article class="match-advice-card"><span class="eyebrow">내가 노릴 상대</span><h3>${title}</h3>${portraits(ids)}<p>사이드에서 상대의 위치를 확인하세요. 우리 본대와 교전이 시작되면, 위 영웅 중 아군의 보호를 받기 어려운 상대부터 노려 잡으세요.</p></article>`;
+  }
+  const h = result.healing;
+  let healing = "<b>자리와 시야에 따라 힐을 나누세요.</b><p>한 명이 탱커를 돌보는 동안 다른 한 명은 메인딜과 사이드에 있는 아군을 살펴보세요.</p>";
+  if (h.kind === "doubleFlex") {
+    healing = "<b>투섭힐 조합이에요.</b><p>두 힐러가 탱커만 보면 줄 수 있는 힐이 남아서 각자 궁이 늦게 찰 수 있어요. 한 명이 탱커를 보고 있으면 다른 한 명은 딜러를 챙기세요. 탱커가 코너를 돌아가면 시야가 닿는 쪽이 이어받고, 탱커가 위험할 땐 둘이 같이 살려주세요.</p>";
+  } else if (h.kind === "split") {
+    healing = `<b>${esc(name(h.main))}가 본대 힐을 맡아요.</b><p>${esc(name(h.main))}는 탱커와 메인딜을 중심으로 돌보고, ${esc(name(h.side))}는 사이드 싸움을 돕다가 본대 힐러가 물리면 지켜주세요.</p>`;
+  }
+  const tankTitles = { advantage: "우리 탱커가 상성에서 유리해요", disadvantage: "우리 탱커가 상성에서 불리해요", mirror: "같은 탱커끼리의 싸움이에요", unlisted: "탱커만 보면 어느 쪽이 유리한지 뚜렷하지 않아요" };
+  const myHero = state.ally[state.mine];
+  function disadvantageAdvice() {
+    if (state.mine === 0) return "생존하며 아군 힐러의 궁극기를 먼저 채우고, 궁으로 승부를 보세요. 그래도 풀리지 않으면 양 팀의 전체 조합을 보고 탱커 교체를 검토하세요.";
+    if (state.mine === 1 || state.mine === 2) {
+      if (matchMainDamage.includes(myHero)) return "상대 탱커가 앞으로 나올 때 화력을 집중해 우리 탱커가 밀리는 걸 막아주세요. 상대 딜러나 힐러가 엄폐 밖으로 나오면 그 기회도 노리세요.";
+      return "상대 탱커가 우리 탱커에게 붙는 순간, 사이드에서 상대 딜러나 힐러를 노리세요. 상대가 뒤를 돌아보게 만들면 우리 탱커가 받는 압박도 줄어요.";
+    }
+    if (h.kind === "doubleFlex") return "다른 힐러가 탱커를 보고 있으면 딜러를 챙기고, 탱커가 위험해질 때 함께 살려주세요.";
+    if (h.main === myHero) return "우리 탱커가 정면 싸움에서 먼저 밀릴 수 있어요. 평소보다 힐이 더 많이 필요할 수 있으니, 교전 중에는 탱커의 체력을 더 자주 살펴보세요.";
+    return "다른 힐러가 탱커를 돌보는 동안 옆과 뒤를 봐주세요. 상대의 침투를 막아주면 우리 탱커도 계속 힐을 받을 수 있어요.";
+  }
+  let tankAdvice = result.tank === "disadvantage" ? disadvantageAdvice() : result.tank === "unlisted" ? "어느 팀 딜러가 고지대를 잡았는지, 탱커가 앞으로 나가도 아군 힐이 닿는지 확인하세요." : result.tank === "mirror" ? "같은 영웅이어도 지원, 자리와 스킬 사용에 따라 싸움이 달라져요." : "상성의 이점을 살리되, 상대 딜러·힐러와 아군 지원을 함께 확인하세요.";
+  if (state.ally[0] === "winston" && state.enemy[0] === "zarya") tankAdvice += " 윈스턴은 자리야를 지나쳐 뒷라인을 물 수 있다는 이점이에요. 자리야와 정면에서 계속 싸우라는 뜻은 아니에요.";
+  if (state.ally[0] === "dva" && state.enemy[0] === "winston") tankAdvice += " 윈스턴이 아군에게 뛰면 매트릭스로 뒤따라오는 화력을 막고, 윈스턴의 방벽을 깨서 밀어내세요.";
+  return `<div class="match-analysis"><div class="match-analysis-heading"><span class="eyebrow">03 / GAME PLAN</span><h2>이번 판에서 먼저 볼 것</h2><p>내 역할과 상대 조합을 기준으로 확인하세요.</p></div><div class="match-advice-grid">${targetCard}${alerts}<article class="match-advice-card"><span class="eyebrow">탱커 상성</span><h3>${tankTitles[result.tank]}</h3><div class="match-tank-duel"><div><small>우리 탱커</small>${portraits([state.ally[0]])}</div><b>VS</b><div><small>상대 탱커</small>${portraits([state.enemy[0]])}</div></div><p>${tankAdvice}</p><small>탱커 둘만 비교한 결과예요. 이 결과만으로 영웅 교체를 권하지 않아요.</small></article><article class="match-advice-card"><span class="eyebrow">우리 팀 힐러 분담</span><h3>누가 본대를 돌볼까요?</h3>${portraits(state.ally.slice(3, 5))}${healing}</article></div></div>`;
+}
 const matchStorageKey = "owsense-match-draft-v1";
 let matchBackgroundPromise;
 function emptyMatch() {
@@ -535,7 +659,7 @@ function matchPage() {
       .join("");
   const teamHTML = (team) =>
     `<section class="match-team ${team}" aria-labelledby="${team}-title"><div class="match-team-heading"><div><span class="eyebrow">${team === "ally" ? "OUR TEAM" : "OPPONENTS"}</span><h2 id="${team}-title">${team === "ally" ? "우리 팀" : "상대 팀"}<span id="${team}-side" class="match-side-badge" hidden></span></h2></div><span class="match-team-count" id="${team}-count">0 / 5</span></div>${matchSlots.map((slot, i) => `<div class="match-slot"><label for="${team}-${i}" class="match-slot-label">${slot.label}</label><div class="match-hero-field"><span class="match-portrait" id="portrait-${team}-${i}" aria-hidden="true">${matchRoleIcons[slot.role]}</span><select id="${team}-${i}" data-team="${team}" data-slot="${i}"><option value="">영웅 선택</option>${options(slot.role)}</select></div>${team === "ally" ? `<label class="match-me"><input type="radio" name="match-me" value="${i}" aria-label="내 영웅: ${slot.label}"><span>나</span></label>` : ""}</div>`).join("")}<p class="match-team-note">${team === "ally" ? "내가 플레이할 영웅 옆에 ‘나’를 표시하세요." : "우리 팀과 같은 영웅도 선택할 수 있어요."}</p></section>`;
-  app.innerHTML = `<div class="page-title match-page-title"><div class="eyebrow">MATCH PLANNER / 운영과 복기 <span class="match-beta">BETA</span></div><h1>이번 판, 어떤 조합인가요?</h1><p class="lead">맵과 양 팀의 영웅을 골라 이번 판을 정리해보세요.</p><p class="match-beta-note">지금은 정보 입력 단계만 사용할 수 있어요. 조합별 운영 안내와 복기는 준비 중이에요.</p></div><form id="match-form" novalidate><section class="match-map-stage" aria-labelledby="match-map-title"><div class="match-map-content"><div><span class="eyebrow">01 / BATTLEGROUND</span><h2 id="match-map-title">이번 판의 맵은?</h2><p id="match-map-caption">맵은 나중에 선택해도 괜찮아요.</p></div><div class="match-map-controls"><label for="match-map">맵 <small>선택 사항</small></label><select id="match-map"><option value="">맵 선택 안 함</option>${[
+  app.innerHTML = `<div class="page-title match-page-title"><div class="eyebrow">MATCH PLANNER / 운영과 복기 <span class="match-beta">BETA</span></div><h1>이번 판, 어떤 조합인가요?</h1><p class="lead">맵과 양 팀의 영웅을 골라 이번 판을 정리해보세요.</p><p class="match-beta-note">조합을 입력하면 역할별 주의 대상, 탱커 상성, 힐러 분담을 확인할 수 있어요. 상황 복기는 준비 중이에요.</p></div><form id="match-form" novalidate><section class="match-map-stage" aria-labelledby="match-map-title"><div class="match-map-content"><div><span class="eyebrow">01 / BATTLEGROUND</span><h2 id="match-map-title">이번 판의 맵은?</h2><p id="match-map-caption">맵은 나중에 선택해도 괜찮아요.</p></div><div class="match-map-controls"><label for="match-map">맵 <small>선택 사항</small></label><select id="match-map"><option value="">맵 선택 안 함</option>${[
     "혼합",
     "호위",
     "쟁탈",
@@ -552,7 +676,7 @@ function matchPage() {
     )
     .join(
       "",
-    )}</select><fieldset id="match-side-wrap" hidden><legend>우리 팀은?</legend><div class="match-side-options"><label><input type="radio" name="match-side" value="attack"><span>${matchSideBadge("attack")}</span></label><label><input type="radio" name="match-side" value="defense"><span>${matchSideBadge("defense")}</span></label></div></fieldset><p id="match-no-side" class="match-no-side" hidden>이 모드는 공격·수비 구분이 없어요.</p></div></div></section><div class="match-lineup-title"><span class="eyebrow">02 / LINEUP</span><p>양 팀의 영웅을 선택하세요. 딜러·힐러 순서는 자유예요.</p></div><div class="match-arena"><div class="match-map-photo" id="match-map-photo" aria-hidden="true"></div><div class="match-teams">${teamHTML("ally")}<div class="match-versus"><span aria-hidden="true">VS</span><p id="match-arena-map">YOUR MATCH</p></div>${teamHTML("enemy")}</div></div><div id="match-errors" class="match-errors" role="alert"></div><div class="match-bottom"><div><p id="match-draft-status" role="status">입력 내용은 이 브라우저에 자동 저장돼요.</p><small>맵 선택은 생략할 수 있어요.</small></div><div class="actions"><button type="button" class="btn light" id="match-clear">입력 초기화</button><button type="submit" class="btn orange">입력 내용 확인 →</button></div></div></form><section id="match-summary" class="match-summary" hidden aria-labelledby="match-summary-title"></section><p class="match-image-credit">전장·영웅 이미지 © Blizzard Entertainment · 전장 이미지 제공: <a href="https://overfast-api.tekrop.fr/" target="_blank" rel="noopener noreferrer">OverFast API</a></p>`;
+    )}</select><fieldset id="match-side-wrap" hidden><legend>우리 팀은?</legend><div class="match-side-options"><label><input type="radio" name="match-side" value="attack"><span>${matchSideBadge("attack")}</span></label><label><input type="radio" name="match-side" value="defense"><span>${matchSideBadge("defense")}</span></label></div></fieldset><p id="match-no-side" class="match-no-side" hidden>이 모드는 공격·수비 구분이 없어요.</p></div></div></section><div class="match-lineup-title"><span class="eyebrow">02 / LINEUP</span><p>양 팀의 영웅을 선택하세요. 딜러·힐러 순서는 자유예요.</p></div><div class="match-arena"><div class="match-map-photo" id="match-map-photo" aria-hidden="true"></div><div class="match-teams">${teamHTML("ally")}<div class="match-versus"><span aria-hidden="true">VS</span><p id="match-arena-map">YOUR MATCH</p></div>${teamHTML("enemy")}</div></div><div id="match-errors" class="match-errors" role="alert"></div><div class="match-bottom"><div><p id="match-draft-status" role="status">입력 내용은 이 브라우저에 자동 저장돼요.</p><small>맵 선택은 생략할 수 있어요.</small></div><div class="actions"><button type="button" class="btn light" id="match-clear">입력 초기화</button><button type="submit" class="btn orange">운영 안내 보기 →</button></div></div></form><section id="match-summary" class="match-summary" hidden aria-labelledby="match-summary-title"></section><p class="match-image-credit">전장·영웅 이미지 © Blizzard Entertainment · 전장 이미지 제공: <a href="https://overfast-api.tekrop.fr/" target="_blank" rel="noopener noreferrer">OverFast API</a></p>`;
   const form = document.querySelector("#match-form");
   const summary = document.querySelector("#match-summary");
   const errorBox = document.querySelector("#match-errors");
@@ -717,7 +841,7 @@ function matchPage() {
     }
     const map = matchMaps.find((m) => m.id === state.map);
     const side = state.side === "attack" ? "공격" : "수비";
-    summary.innerHTML = `<span class="eyebrow">MATCH READY</span><h2 id="match-summary-title" tabindex="-1">이번 판 정보가 준비됐어요.</h2><p class="match-summary-map">${map ? `${esc(map.name)} · ${map.mode}${map.sided ? " · 우리 팀 " + side : ""}` : "맵 미선택"}</p><div class="match-summary-teams">${["ally", "enemy"].map((team) => `<div><h3>${team === "ally" ? "우리 팀" : "상대 팀"}</h3><ul>${state[team].map((id, i) => `<li><span>${matchSlots[i].label}</span><b>${esc(heroName(id))}${team === "ally" && state.mine === i ? " <em>나</em>" : ""}</b></li>`).join("")}</ul></div>`).join("")}</div><p class="match-beta-note">조합별 운영 안내와 상황 복기는 준비 중이에요. 입력한 조합은 이 브라우저에 남아 있어요.</p>`;
+    summary.innerHTML = `<span class="eyebrow">MATCH READY</span><h2 id="match-summary-title" tabindex="-1">이번 판 정보가 준비됐어요.</h2><p class="match-summary-map">${map ? `${esc(map.name)} · ${map.mode}${map.sided ? " · 우리 팀 " + side : ""}` : "맵 미선택"}</p><div class="match-summary-teams">${["ally", "enemy"].map((team) => `<div><h3>${team === "ally" ? "우리 팀" : "상대 팀"}</h3><ul>${state[team].map((id, i) => `<li><span>${matchSlots[i].label}</span><b>${esc(heroName(id))}${team === "ally" && state.mine === i ? " <em>나</em>" : ""}</b></li>`).join("")}</ul></div>`).join("")}</div>${matchAnalysisHTML(state)}`;
     summary.hidden = false;
     document
       .querySelector("#match-summary-title")

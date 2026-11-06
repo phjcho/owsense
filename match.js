@@ -528,20 +528,23 @@ function matchAnalysisHTML(state) {
     tank: ["가까이 붙는 딜러를 조심하세요!", "위 영웅들은 탱커를 근거리에서 압박해요. 특히 뚜벅이 탱커는 더 주의하고, 아군 지원과 빠질 길을 확인하세요."],
   };
   const alerts = result.alerts.map(({kind, ids}) => `<article class="match-advice-card warning"><span class="eyebrow">${(["ranged", "sniper", "lowHealing"].includes(kind)) ? "우리 팀 모두 주의" : "내가 주의할 상대"}</span><h3>${alertCopy[kind][0]}</h3>${portraits(ids)}<p>${alertCopy[kind][1]}</p></article>`).join("");
+  const myHero = state.ally[state.mine];
+  const flexiblePressure = ["reaper", "vendetta", "symmetra"].includes(myHero);
+  const heroAdvice = {
+    pharah: "공중에서 상대 탱커 뒤쪽을 노려보세요. 뒤따르던 딜러·힐러가 엄폐하면 상대 탱커도 혼자 계속 밀고 들어오기 어려워요.",
+    junkrat: "상대 탱커가 지나올 길에 미리 화력을 깔아주세요. 우리 탱커와 맞붙기 전부터 체력을 깎아두면 정면 싸움을 도울 수 있어요.",
+    torbjorn: "상대 탱커가 지나올 길에 미리 화력을 깔아주세요. 우리 탱커와 맞붙기 전부터 체력을 깎아두면 정면 싸움을 도울 수 있어요.",
+    mei: "상대 탱커가 앞으로 나오면 등 뒤를 빙벽으로 가를 각을 보세요. 상대 힐이 끊기는 순간 우리 탱커와 함께 노릴 수 있어요.",
+  };
+  const subDamageAdvice = flexiblePressure
+    ? "상대 탱커를 압박하며 킬각을 보거나, 상대 메인딜·섭힐에게 파고들 기회를 노리세요."
+    : heroAdvice[myHero] || "상대 탱커가 앞으로 나올 때 뒤따르는 딜러·힐러를 살펴보세요. 들어갈 틈이 보이면 그쪽을 압박해 우리 탱커에게 쏠리는 화력을 나눠주세요.";
   let targetCard = "";
-  if (["reaper", "vendetta"].includes(state.ally[state.mine])) {
-    const tank = state.enemy[0];
+  if (result.targets) {
     const backline = result.targets.length ? result.targets : state.enemy.slice(3, 5);
-    const names = backline.map(id => esc(name(id))).join("·");
-    targetCard = `<article class="match-advice-card"><span class="eyebrow">내가 노릴 상대</span><h3>이번 한타에서 누구를 압박할까요?</h3>${portraits([tank, ...backline])}<p>상대 탱커를 가까이서 압박하며 킬각도 볼 수 있어요. ${names} 중 보호를 받기 어려운 상대가 보이면 사이드에서 파고들 기회예요.</p></article>`;
-  } else if (result.targets) {
-    const primary = result.targets.length > 0;
-    const ids = primary ? result.targets : state.enemy.slice(3, 5);
-    const roles = [];
-    if (ids.some(id => matchMainDamage.includes(id))) roles.push("메인딜");
-    if (ids.some(id => matchHealingTiers[0].includes(id))) roles.push("섭힐");
-    const title = primary ? `상대 ${roles.join("·")}을 먼저 노리세요!` : "상대 힐러 중 혼자 있는 영웅을 노리세요!";
-    targetCard = `<article class="match-advice-card"><span class="eyebrow">내가 노릴 상대</span><h3>${title}</h3>${portraits(ids)}<p>사이드에서 상대의 위치를 확인하세요. 우리 본대와 교전이 시작되면, 위 영웅 중 아군의 보호를 받기 어려운 상대부터 노려 잡으세요.</p></article>`;
+    const tankPressure = flexiblePressure || ["mei", "junkrat", "torbjorn"].includes(myHero);
+    const ids = tankPressure ? [state.enemy[0], ...backline] : backline;
+    targetCard = `<article class="match-advice-card"><span class="eyebrow">내 운영</span><h3>이번 한타에서 누구를 압박할까요?</h3>${portraits(ids)}<p>${result.tank === "disadvantage" ? "위 영웅들의 위치를 확인하고, 아래 탱커 상성 안내에 맞춰 압박할 기회를 살펴보세요." : subDamageAdvice}</p></article>`;
   }
   const h = result.healing;
   let healing = "<b>자리와 시야에 따라 힐을 나누세요.</b><p>한 명이 탱커를 돌보는 동안 다른 한 명은 메인딜과 사이드에 있는 아군을 살펴보세요.</p>";
@@ -551,12 +554,11 @@ function matchAnalysisHTML(state) {
     healing = `<b>${esc(name(h.main))}가 본대 힐을 맡아요.</b><p>${esc(name(h.main))}는 탱커와 메인딜을 중심으로 돌보고, ${esc(name(h.side))}는 사이드 싸움을 돕다가 본대 힐러가 물리면 지켜주세요.</p>`;
   }
   const tankTitles = { advantage: "우리 탱커가 상성에서 유리해요", disadvantage: "우리 탱커가 상성에서 불리해요", mirror: "같은 탱커끼리의 싸움이에요", unlisted: "탱커만 보면 어느 쪽이 유리한지 뚜렷하지 않아요" };
-  const myHero = state.ally[state.mine];
   function disadvantageAdvice() {
     if (state.mine === 0) return "생존하며 아군 힐러의 궁극기를 먼저 채우고, 궁으로 승부를 보세요. 그래도 풀리지 않으면 양 팀의 전체 조합을 보고 탱커 교체를 검토하세요.";
     if (state.mine === 1 || state.mine === 2) {
       if (matchMainDamage.includes(myHero)) return "상대 탱커가 앞으로 나올 때 화력을 집중해 우리 탱커가 밀리는 걸 막아주세요. 상대 딜러나 힐러가 엄폐 밖으로 나오면 그 기회도 노리세요.";
-      return "상대 탱커가 우리 탱커에게 붙는 순간, 사이드에서 상대 딜러나 힐러를 노리세요. 상대가 뒤를 돌아보게 만들면 우리 탱커가 받는 압박도 줄어요.";
+      return "우리 탱커가 정면 싸움에서 먼저 밀릴 수 있어요. " + subDamageAdvice;
     }
     if (h.kind === "doubleFlex") return "다른 힐러가 탱커를 보고 있으면 딜러를 챙기고, 탱커가 위험해질 때 함께 살려주세요.";
     if (h.main === myHero) return "우리 탱커가 정면 싸움에서 먼저 밀릴 수 있어요. 평소보다 힐이 더 많이 필요할 수 있으니, 교전 중에는 탱커의 체력을 더 자주 살펴보세요.";

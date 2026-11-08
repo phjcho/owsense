@@ -595,14 +595,20 @@ function compositionComparisonHTML(state) {
   const damage = enemy.team.slice(1, 3);
   let intent;
   if (enemy.team[0] === "winston" && damage.every(id => matchInfiltrators.includes(id))) {
-    intent = `윈스턴과 ${names(damage)}가 우리 팀 한 명에게 동시에 들어올 수 있어요.`;
+    intent = `윈스턴과 ${names(damage)}가 한 명을 함께 노리는 다이브 조합이에요.`;
   } else if (enemy.team[0] === "winston" && damage.every(id => matchMainDamage.includes(id))) {
-    intent = `윈스턴이 ${names(damage)}를 지키며 두 딜러가 계속 쏠 자리를 만들 수 있어요.`;
+    intent = `윈스턴이 ${names(damage)}를 지켜 두 메인딜이 화력을 유지하는 조합이에요.`;
   } else if (enemy.team[0] === "reinhardt" && damage.includes("reaper")) {
-    intent = "라인하르트와 리퍼가 함께 붙어 우리 탱커를 압박할 수 있어요.";
+    intent = "라인하르트·리퍼가 함께 거리를 좁혀 우리 탱커를 압박하는 근접 조합이에요.";
+  } else if (enemy.heroes.length >= 2) {
+    const core = enemy.team.filter(id => enemy.heroes.includes(id) || id === "bastion");
+    const boost = enemy.team.includes("mercy") && damage.some(id => core.includes(id) && matchMainDamage.includes(id));
+    intent = boost
+      ? `${names(core)}의 화력에 메르시의 증폭을 더해 우리가 접근하는 동안 체력을 깎는 포킹 조합이에요.`
+      : `${names(core)} 중심으로 멀리서부터 우리 체력을 깎는 포킹 조합이에요.`;
   } else if (enemy.snipers.length) {
     intent = `${names(enemy.snipers)}가 긴 사선을 잡아 우리 팀이 열린 곳을 건너는 순간을 노릴 수 있어요.`;
-  } else if (edge < 0) {
+  } else if (edge < 0 && enemy.heroes.length) {
     intent = `${names(enemy.heroes)}의 원거리 화력이 우리가 접근하는 길에 집중될 수 있어요.`;
   } else if (edge > 0) {
     intent = "상대가 엄폐물을 따라 거리를 좁혀 우리 딜러가 편하게 쏠 공간을 줄일 수 있어요.";

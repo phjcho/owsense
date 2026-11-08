@@ -1718,3 +1718,6 @@ footer small {
 .comparison-icons { display:grid; grid-template-columns:repeat(5,minmax(0,44px)); gap:5px; margin:12px 0 16px; }
 .comparison-icons img { width:100%; aspect-ratio:1; object-fit:cover; background:#e0e5e4; border-radius:4px; }
 .comparison-icons .mine { outline:2px solid #a46217; }
+
+.hero .actions, .match-demo-action { flex-wrap: wrap; }
+.hero .actions .btn, .match-demo-action .btn { white-space: nowrap; flex: 0 0 auto; }

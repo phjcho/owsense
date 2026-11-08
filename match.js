@@ -590,12 +590,26 @@ function compositionComparisonHTML(state) {
   const rushIntoWinston = shorter.team[0] === "reinhardt" && shorter.team.includes("reaper") && longer.team[0] === "winston";
   const contested = edge && shorter.snipers.length && !longer.snipers.length && !longer.team.includes("zenyatta") && !rushIntoWinston;
   const map = matchMaps.find(m => m.id === state.map);
-  function side(label, profile, advantage, teamSide, mine) {
-    const action = contested ? (advantage > 0 ? "포킹으로 압박" : "저격 사선 확보")
-      : advantage > 0 ? "거리 유지" : advantage < 0 ? "거리 좁히기" : "자리 싸움";
-    return `<article class="match-advice-card"><span class="eyebrow">${label}</span>${lineupStrip(profile.team, mine)}<h3>${action}</h3><p>${teamPlan(profile, contested && advantage < 0 ? 0 : advantage, names)}</p>${highGroundAdvice(map, teamSide)}</article>`;
+  const action = contested ? (edge > 0 ? "포킹으로 압박" : "저격 사선 확보")
+    : edge > 0 ? "거리 유지" : edge < 0 ? "거리 좁히기" : "자리 싸움";
+  const damage = enemy.team.slice(1, 3);
+  let intent;
+  if (enemy.team[0] === "winston" && damage.every(id => matchInfiltrators.includes(id))) {
+    intent = `윈스턴과 ${names(damage)}가 우리 팀 한 명에게 동시에 들어올 수 있어요.`;
+  } else if (enemy.team[0] === "winston" && damage.every(id => matchMainDamage.includes(id))) {
+    intent = `윈스턴이 ${names(damage)}를 지키며 두 딜러가 계속 쏠 자리를 만들 수 있어요.`;
+  } else if (enemy.team[0] === "reinhardt" && damage.includes("reaper")) {
+    intent = "라인하르트와 리퍼가 함께 붙어 우리 탱커를 압박할 수 있어요.";
+  } else if (enemy.snipers.length) {
+    intent = `${names(enemy.snipers)}가 긴 사선을 잡아 우리 팀이 열린 곳을 건너는 순간을 노릴 수 있어요.`;
+  } else if (edge < 0) {
+    intent = `${names(enemy.heroes)}의 원거리 화력이 우리가 접근하는 길에 집중될 수 있어요.`;
+  } else if (edge > 0) {
+    intent = "상대가 엄폐물을 따라 거리를 좁혀 우리 딜러가 편하게 쏠 공간을 줄일 수 있어요.";
+  } else {
+    intent = "먼저 옆각을 잡은 상대가 우리 본대에 화력을 모을 수 있어요.";
   }
-  return `<section class="match-analysis"><div class="match-analysis-heading"><span class="eyebrow">04</span><h2>조합 비교</h2></div><div class="match-advice-grid">${side("우리 팀", ally, edge, state.side, state.mine)}${side("상대 팀", enemy, -edge, state.side === "attack" ? "defense" : state.side === "defense" ? "attack" : "")}</div></section>`;
+  return `<section class="match-analysis"><div class="match-analysis-heading"><span class="eyebrow">04</span><h2>조합 비교</h2></div><div class="match-advice-grid"><article class="match-advice-card"><span class="eyebrow">우리 팀</span>${lineupStrip(ally.team,state.mine)}<h3>${action}</h3><p>${teamPlan(ally, contested && edge < 0 ? 0 : edge, names)}</p>${highGroundAdvice(map,state.side)}</article><article class="match-advice-card"><span class="eyebrow">상대 팀</span>${lineupStrip(enemy.team)}<h3>예상되는 상대 움직임</h3><p>${intent}</p></article></div></section>`;
 }
 
 function matchAnalysisHTML(state) {

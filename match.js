@@ -581,7 +581,7 @@ function highGroundAdvice(map, side) {
   return `<h4>공격 · 2층을 뺏자!</h4><p>${advice}</p>`;
 }
 
-function enemyPlan(profile, names) {
+function enemyPlan(profile, names, defending) {
   const {team, heroes, snipers} = profile;
   const tank = team[0];
   const damage = team.slice(1, 3);
@@ -609,9 +609,10 @@ function enemyPlan(profile, names) {
   if (heroes.length >= 2) {
     const ranged = team.filter(id => heroes.includes(id) || id === "bastion");
     const boost = team.includes("mercy") && damage.some(id => ranged.includes(id) && matchMainDamage.includes(id));
-    return boost
+    const overview = boost
       ? `${names(ranged)}의 화력에 메르시의 증폭을 더해 우리가 접근하는 동안 체력을 깎는 포킹 조합이에요.`
       : `${names(ranged)} 중심으로 멀리서부터 우리 체력을 깎는 포킹 조합이에요.`;
+    return defending ? overview + " 상대가 2층을 잡으면 우리 진입로를 여러 각에서 내려다볼 수 있어, 정면으로 올라가는 동안 화력이 집중돼요." : overview;
   }
   if (snipers.length)
     return `${names(snipers)}의 사선이 중심인 조합이에요. ${names([tank])}와 교전할 때 열린 길로 나오면 저격을 받을 수 있어요.`;
@@ -631,7 +632,7 @@ function compositionComparisonHTML(state) {
   const map = matchMaps.find(m => m.id === state.map);
   const action = contested ? (edge > 0 ? "포킹으로 압박" : "저격 사선 확보")
     : edge > 0 ? "거리 유지" : edge < 0 ? "거리 좁히기" : "자리 싸움";
-  const intent = enemyPlan(enemy, names);
+  const intent = enemyPlan(enemy, names, map?.sided && state.side === "attack");
   return `<section class="match-analysis"><div class="match-analysis-heading"><span class="eyebrow">04</span><h2>조합 비교</h2></div><div class="match-advice-grid"><article class="match-advice-card"><span class="eyebrow">우리 팀</span>${lineupStrip(ally.team,state.mine)}<h3>${action}</h3><p>${teamPlan(ally, contested && edge < 0 ? 0 : edge, names)}</p>${highGroundAdvice(map,state.side)}</article><article class="match-advice-card"><span class="eyebrow">상대 팀</span>${lineupStrip(enemy.team)}<h3>예상되는 상대 움직임</h3><p>${intent}</p></article></div></section>`;
 }
 

@@ -633,7 +633,7 @@ function compositionComparisonHTML(state) {
   const action = contested ? (edge > 0 ? "포킹으로 압박" : "저격 사선 확보")
     : edge > 0 ? "거리 유지" : edge < 0 ? "거리 좁히기" : "자리 싸움";
   const intent = enemyPlan(enemy, names, map?.sided && state.side === "attack");
-  return `<section class="match-analysis"><div class="match-analysis-heading"><span class="eyebrow">04</span><h2>조합 비교</h2></div><div class="match-advice-grid"><article class="match-advice-card"><span class="eyebrow">우리 팀</span>${lineupStrip(ally.team,state.mine)}<h3>${action}</h3><p>${teamPlan(ally, contested && edge < 0 ? 0 : edge, names)}</p>${highGroundAdvice(map,state.side)}</article><article class="match-advice-card"><span class="eyebrow">상대 팀</span>${lineupStrip(enemy.team)}<h3>예상되는 상대 움직임</h3><p>${intent}</p></article></div></section>`;
+  return `<section class="match-analysis"><div class="match-analysis-heading"><span class="eyebrow">04</span><h2>조합 비교 <span class="match-beta">제작 중</span></h2></div><div class="match-advice-grid"><article class="match-advice-card"><span class="eyebrow">우리 팀</span>${lineupStrip(ally.team,state.mine)}<h3>${action}</h3><p>${teamPlan(ally, contested && edge < 0 ? 0 : edge, names)}</p>${highGroundAdvice(map,state.side)}</article><article class="match-advice-card"><span class="eyebrow">상대 팀</span>${lineupStrip(enemy.team)}<h3>예상되는 상대 움직임</h3><p>${intent}</p></article></div></section>`;
 }
 
 function matchAnalysisHTML(state) {

@@ -566,6 +566,58 @@ function teamPlan(profile, edge, names) {
   return plan;
 }
 
+function teamFormation(team, right) {
+  const damage = team.slice(1,3);
+  const guard = team[0] === "winston" && damage.every(id => matchMainDamage.includes(id));
+  const dive = team[0] === "winston" && damage.every(id => matchInfiltrators.includes(id));
+  const rush = team[0] === "reinhardt" && damage.includes("reaper");
+  const kind = guard ? "guard" : dive ? "dive" : rush ? "rush" : "base";
+  const duty = matchHealingDuty(team.slice(3));
+  const slots = team.map((id,i) => {
+    let x, y;
+    if (i === 0) { x = guard ? 270 : 425; y = 145; }
+    else if (i < 3) {
+      x = guard ? 180 : dive ? 396 : matchSnipers.includes(id) ? 115 : matchMainDamage.includes(id) ? 220 : 345;
+      y = i === 1 ? 55 : 248;
+    } else {
+      x = duty.side === id ? 215 : 75;
+      y = i === 3 ? 117 : 185;
+    }
+    return { id, x: right ? 1000-x : x, y };
+  });
+  return { kind, slots, right };
+}
+
+function formationBoard(state) {
+  const formations = [teamFormation(state.ally,false), teamFormation(state.enemy,true)];
+  const nodes = [], lines = [];
+  formations.forEach(({kind,slots,right}, side) => {
+    const other = formations[1-side].slots;
+    const color = right ? "#ac4753" : "#286287";
+    function arrow(from,to) {
+      const dx = to.x-from.x, dy = to.y-from.y, length = Math.hypot(dx,dy);
+      const ux = dx/length, uy = dy/length;
+      const x = to.x-ux*34, y = to.y-uy*34;
+      lines.push(`<path d="M ${from.x+ux*34} ${from.y+uy*34} L ${x} ${y} m ${-ux*10-uy*5} ${-uy*10+ux*5} L ${x} ${y} l ${-ux*10+uy*5} ${-uy*10-ux*5}" fill="none" stroke="${color}" stroke-width="3"/>`);
+    }
+    if (kind === "dive") {
+      const target = other.find(s => matchHealingTiers[0].includes(s.id)) || other[3];
+      slots.slice(0,3).forEach(s => arrow(s,target));
+    } else if (kind === "rush") {
+      arrow(slots[0],other[0]);
+    } else if (kind === "guard") {
+      const {x,y} = slots[0], d = right ? -1 : 1;
+      lines.push(`<path d="M ${x+32*d} ${y-52} Q ${x+88*d} ${y} ${x+32*d} ${y+52}" fill="none" stroke="${color}" stroke-width="6"/>`);
+    }
+    slots.forEach(({id,x,y},i) => {
+      const hero = matchHeroes.find(h=>h.id===id);
+      const mine = !right && state.mine===i;
+      nodes.push(`<div class="formation-hero ${right?'enemy':'ally'} ${mine?'mine':''}" style="left:${x/10}%;top:${y/3}%"><img src="${hero.portrait}" alt="" onerror="this.style.visibility='hidden'"><span>${esc(hero.name)}</span>${mine?'<b>나</b>':''}</div>`);
+    });
+  });
+  return `<figure class="formation"><div class="formation-scroll" tabindex="0" aria-label="양 팀 영웅 배치 예시"><div class="formation-field"><div class="formation-labels"><strong>우리 팀</strong><strong>상대 팀</strong></div><div class="formation-pitch"><svg viewBox="0 0 1000 300" preserveAspectRatio="none" aria-hidden="true">${lines.join("")}</svg>${nodes.join("")}</div></div></div><figcaption>조합의 운영을 보여주는 배치 예시예요. 실제 자리는 맵·공수·현재 구간에 따라 달라져요.</figcaption></figure>`;
+}
+
 function compositionComparisonHTML(state) {
   const ally = pokeProfile(state.ally), enemy = pokeProfile(state.enemy);
   const names = ids => ids.map(id => esc(matchHeroes.find(h => h.id === id).name)).join("·");
@@ -574,14 +626,12 @@ function compositionComparisonHTML(state) {
   const longer = edge > 0 ? ally : enemy;
   const rushIntoWinston = shorter.team[0] === "reinhardt" && shorter.team.includes("reaper") && longer.team[0] === "winston";
   const contested = edge && shorter.snipers.length && !longer.snipers.length && !longer.team.includes("zenyatta") && !rushIntoWinston;
-  let summary = "교전 거리의 우위가 뚜렷하지 않아요. 양 팀 딜러가 어느 자리에서 계속 쏠 수 있는지 살펴보세요.";
-  if (contested) {
-    summary = `${edge > 0 ? "우리 팀" : "상대 팀"}이 포킹을 이어가기 좋지만, ${names(shorter.snipers)}의 사선에 따라 편한 교전 거리가 달라져요.`;
-  } else if (edge) {
-    summary = edge > 0 ? "우리 팀은 거리를 유지하고, 상대 팀은 거리를 좁히는 편이 좋아요." : "우리 팀은 거리를 좁히고, 상대 팀은 거리를 유지하는 편이 좋아요.";
+  function side(label, profile, advantage) {
+    const action = contested ? (advantage > 0 ? "포킹으로 압박" : "저격 사선 확보")
+      : advantage > 0 ? "거리 유지" : advantage < 0 ? "거리 좁히기" : "자리 싸움";
+    return `<article class="match-advice-card"><span class="eyebrow">${label}</span><h3>${action}</h3><p>${teamPlan(profile, contested && advantage < 0 ? 0 : advantage, names)}</p></article>`;
   }
-  const side = (label, profile, advantage) => `<article class="match-advice-card"><h3>${label} 기본 운영</h3><p>${teamPlan(profile, advantage, names)}</p></article>`;
-  return `<section class="match-analysis"><div class="match-analysis-heading"><span class="eyebrow">04 / TEAM PLAY</span><h2>조합 비교</h2><p>${summary}</p></div><div class="match-advice-grid">${side("우리 팀", ally, contested ? 0 : edge)}${side("상대 팀", enemy, contested ? 0 : -edge)}</div></section>`;
+  return `<section class="match-analysis"><div class="match-analysis-heading"><span class="eyebrow">04</span><h2>조합 비교</h2></div>${formationBoard(state)}<div class="match-advice-grid">${side("우리 팀", ally, edge)}${side("상대 팀", enemy, -edge)}</div></section>`;
 }
 
 function matchAnalysisHTML(state) {

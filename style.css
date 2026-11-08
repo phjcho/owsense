@@ -1715,3 +1715,16 @@ footer small {
 .match-tank-duel { display: grid; grid-template-columns: 1fr auto 1fr; align-items: center; gap: 8px; margin: 12px 0; text-align: center; }
 .match-tank-duel .match-advice-heroes { justify-content: center; margin: 4px 0 0; }
 .match-tank-duel .match-advice-heroes span { flex-direction: column; }
+.formation {margin:18px 0}
+.formation-scroll {overflow-x:auto;border:1px solid #cecfc7;border-radius:8px}
+.formation-field {min-width:620px;background:linear-gradient(90deg,#ecf4f8 49.8%,#cfcbc3 50%,#fcf1f1 50.2%)}
+.formation-labels {display:flex;justify-content:space-between;padding:12px 18px 0;color:#286287}
+.formation-labels strong:last-child {color:#973e4d}
+.formation-pitch {position:relative;height:300px}
+.formation-pitch svg {position:absolute;width:100%;height:100%;inset:0}
+.formation-hero {position:absolute;transform:translate(-50%,-50%);display:grid;justify-items:center;gap:2px;color:#172632;font-size:12px;font-weight:700;white-space:nowrap}
+.formation-hero img {width:40px;height:40px;border-radius:50%;object-fit:cover;background:#d9e1e5;border:2px solid #286287}
+.formation-hero.enemy img {border-color:#ac4753}
+.formation-hero.mine img {outline:3px solid #d58524;outline-offset:2px}
+.formation-hero b {position:absolute;top:-8px;right:-8px;border-radius:8px;padding:0 5px;background:#794613;color:white}
+.formation figcaption {margin-top:8px;font-size:13px}

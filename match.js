@@ -771,10 +771,15 @@ function matchSideBadge(side) {
   return `${matchSideIcons[side]}${side === "attack" ? "공격" : "수비"}`;
 }
 
-function matchPage() {
+function demoMatch() {
+  return { map: "dorado", side: "defense", mine: 3,
+    ally: ["reinhardt", "ashe", "sojourn", "brigitte", "zenyatta"],
+    enemy: ["ramattra", "widowmaker", "genji", "ana", "kiriko"] };
+}
+function matchPage(demo = false) {
   let state;
   try {
-    state = cleanMatch(
+    state = demo ? demoMatch() : cleanMatch(
       JSON.parse(localStorage.getItem(matchStorageKey) || "null"),
     );
   } catch {
@@ -807,16 +812,16 @@ function matchPage() {
     )
     .join(
       "",
-    )}</select><fieldset id="match-side-wrap" hidden><legend>우리 팀은?</legend><div class="match-side-options"><label><input type="radio" name="match-side" value="attack"><span>${matchSideBadge("attack")}</span></label><label><input type="radio" name="match-side" value="defense"><span>${matchSideBadge("defense")}</span></label></div></fieldset><p id="match-no-side" class="match-no-side" hidden>이 모드는 공격·수비 구분이 없어요.</p></div></div></section><div class="match-lineup-title"><span class="eyebrow">02 / LINEUP</span><p>양 팀의 영웅을 선택하세요. 딜러·힐러 순서는 자유예요.</p></div><div class="match-arena"><div class="match-map-photo" id="match-map-photo" aria-hidden="true"></div><div class="match-teams">${teamHTML("ally")}<div class="match-versus"><span aria-hidden="true">VS</span><p id="match-arena-map">YOUR MATCH</p></div>${teamHTML("enemy")}</div></div><div id="match-errors" class="match-errors" role="alert"></div><div class="match-bottom"><div><p id="match-draft-status" role="status">입력 내용은 이 브라우저에 자동 저장돼요.</p><small>맵 선택은 생략할 수 있어요.</small></div><div class="actions"><button type="button" class="btn light" id="match-clear">입력 초기화</button><button type="submit" class="btn orange">운영 안내 보기 →</button></div></div></form><section id="match-summary" class="match-summary" hidden aria-labelledby="match-summary-title"></section><p class="match-image-credit">전장·영웅 이미지 © Blizzard Entertainment · 전장 이미지 제공: <a href="https://overfast-api.tekrop.fr/" target="_blank" rel="noopener noreferrer">OverFast API</a></p>`;
+    )}</select><fieldset id="match-side-wrap" hidden><legend>우리 팀은?</legend><div class="match-side-options"><label><input type="radio" name="match-side" value="attack"><span>${matchSideBadge("attack")}</span></label><label><input type="radio" name="match-side" value="defense"><span>${matchSideBadge("defense")}</span></label></div></fieldset><p id="match-no-side" class="match-no-side" hidden>이 모드는 공격·수비 구분이 없어요.</p></div></div></section><div class="match-lineup-title"><span class="eyebrow">02 / LINEUP</span><p>양 팀의 영웅을 선택하세요. 딜러·힐러 순서는 자유예요.</p></div><div class="match-arena"><div class="match-map-photo" id="match-map-photo" aria-hidden="true"></div><div class="match-teams">${teamHTML("ally")}<div class="match-versus"><span aria-hidden="true">VS</span><p id="match-arena-map">YOUR MATCH</p></div>${teamHTML("enemy")}</div></div><div id="match-errors" class="match-errors" role="alert"></div><div class="match-bottom"><div><p id="match-draft-status" role="status">${demo ? "도라도 수비 예시예요. ‘나’를 바꿔 다른 역할도 체험해 보세요." : "입력 내용은 이 브라우저에 자동 저장돼요."}</p><small>맵 선택은 생략할 수 있어요.</small></div><div class="actions"><button type="button" class="btn light" id="match-clear">입력 초기화</button><button type="submit" class="btn orange">운영 안내 보기 →</button></div></div></form><section id="match-summary" class="match-summary" hidden aria-labelledby="match-summary-title"></section><p class="match-image-credit">전장·영웅 이미지 © Blizzard Entertainment · 전장 이미지 제공: <a href="https://overfast-api.tekrop.fr/" target="_blank" rel="noopener noreferrer">OverFast API</a></p>`;
   const form = document.querySelector("#match-form");
   const summary = document.querySelector("#match-summary");
   const errorBox = document.querySelector("#match-errors");
   const mapInput = document.querySelector("#match-map");
   const writeDraft = () => {
     try {
-      localStorage.setItem(matchStorageKey, JSON.stringify(state));
+      if (!demo) localStorage.setItem(matchStorageKey, JSON.stringify(state));
       document.querySelector("#match-draft-status").textContent =
-        "입력 내용을 이 브라우저에 저장했어요.";
+        demo ? "예시 조합을 변경했어요." : "입력 내용을 이 브라우저에 저장했어요.";
     } catch {
       document.querySelector("#match-draft-status").textContent =
         "브라우저에 저장하지 못했어요. 이 화면에서는 계속 입력할 수 있어요.";
@@ -956,7 +961,7 @@ function matchPage() {
     summary.hidden = true;
     errorBox.textContent = "";
     try {
-      localStorage.removeItem(matchStorageKey);
+      if (!demo) localStorage.removeItem(matchStorageKey);
     } catch {}
     document.querySelector("#match-draft-status").textContent =
       "입력 내용을 초기화했어요.";
@@ -981,4 +986,5 @@ function matchPage() {
   };
   syncTeams();
   syncMap();
+  if (demo) requestAnimationFrame(() => { if (form.isConnected) form.requestSubmit(); });
 }

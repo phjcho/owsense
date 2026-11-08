@@ -581,6 +581,45 @@ function highGroundAdvice(map, side) {
   return `<h4>공격 · 2층을 뺏자!</h4><p>${advice}</p>`;
 }
 
+function enemyPlan(profile, names) {
+  const {team, heroes, snipers} = profile;
+  const tank = team[0];
+  const damage = team.slice(1, 3);
+  const flank = damage.filter(id => matchInfiltrators.includes(id));
+  const close = damage.filter(id => ["reaper", "mei", "symmetra", "vendetta"].includes(id));
+  const diveTank = ["winston", "doomfist", "wrecking-ball", "dva", "hazard"].includes(tank);
+  const brawlTank = ["reinhardt", "ramattra", "junker-queen", "mauga", "zarya", "roadhog"].includes(tank);
+  const core = ids => names([tank, ...ids]);
+  if (diveTank && flank.length === 2)
+    return `${core(flank)} 중심의 다이브 조합이에요. 셋이 같은 순간에 우리 팀 한 명을 노릴 수 있어요.`;
+  if (tank === "winston" && damage.every(id => matchMainDamage.includes(id)))
+    return `윈스턴이 방벽으로 지키는 투메인딜 조합이에요. ${names(damage)}의 지속 화력이 중심이에요.`;
+  if (brawlTank && close.length) {
+    const sightline = snipers.length ? ` 뒤에서는 ${names(snipers)}의 긴 사선도 열려요.` : "";
+    return `${core(close)} 중심의 근접 조합이에요. 함께 거리를 좁혀 우리 탱커를 압박할 수 있어요.${sightline}`;
+  }
+  if (flank.length && flank.length < 2) {
+    const front = damage.filter(id => !flank.includes(id));
+    if (diveTank)
+      return `${core(flank)}의 진입에 ${names(front)}의 화력이 따라오는 조합이에요. 진입한 상대와 뒤에서 쏘는 딜러를 함께 살펴보세요.`;
+    return `본대에서는 ${core(front)}의 화력이, 사이드에서는 ${names(flank)}의 압박이 들어오는 조합이에요.`;
+  }
+  if (flank.length === 2)
+    return `${names([tank])}의 정면 압박에 맞춰 ${names(flank)}의 사이드 공격이 들어올 수 있는 조합이에요.`;
+  if (heroes.length >= 2) {
+    const ranged = team.filter(id => heroes.includes(id) || id === "bastion");
+    const boost = team.includes("mercy") && damage.some(id => ranged.includes(id) && matchMainDamage.includes(id));
+    return boost
+      ? `${names(ranged)}의 화력에 메르시의 증폭을 더해 우리가 접근하는 동안 체력을 깎는 포킹 조합이에요.`
+      : `${names(ranged)} 중심으로 멀리서부터 우리 체력을 깎는 포킹 조합이에요.`;
+  }
+  if (snipers.length)
+    return `${names(snipers)}의 사선이 중심인 조합이에요. ${names([tank])}와 교전할 때 열린 길로 나오면 저격을 받을 수 있어요.`;
+  if (close.length)
+    return `${names([tank])} 주변에 붙으면 ${names(close)}의 근거리 화력까지 겹칠 수 있는 조합이에요.`;
+  return `${names([tank])}의 정면 교전과 ${names(damage)}의 화력이 겹치는 순간을 노릴 수 있는 조합이에요.`;
+}
+
 function compositionComparisonHTML(state) {
   const ally = pokeProfile(state.ally), enemy = pokeProfile(state.enemy);
   const names = ids => ids.map(id => esc(matchHeroes.find(h => h.id === id).name)).join("·");
@@ -592,29 +631,7 @@ function compositionComparisonHTML(state) {
   const map = matchMaps.find(m => m.id === state.map);
   const action = contested ? (edge > 0 ? "포킹으로 압박" : "저격 사선 확보")
     : edge > 0 ? "거리 유지" : edge < 0 ? "거리 좁히기" : "자리 싸움";
-  const damage = enemy.team.slice(1, 3);
-  let intent;
-  if (enemy.team[0] === "winston" && damage.every(id => matchInfiltrators.includes(id))) {
-    intent = `윈스턴과 ${names(damage)}가 한 명을 함께 노리는 다이브 조합이에요.`;
-  } else if (enemy.team[0] === "winston" && damage.every(id => matchMainDamage.includes(id))) {
-    intent = `윈스턴이 ${names(damage)}를 지켜 두 메인딜이 화력을 유지하는 조합이에요.`;
-  } else if (enemy.team[0] === "reinhardt" && damage.includes("reaper")) {
-    intent = "라인하르트·리퍼가 함께 거리를 좁혀 우리 탱커를 압박하는 근접 조합이에요.";
-  } else if (enemy.heroes.length >= 2) {
-    const core = enemy.team.filter(id => enemy.heroes.includes(id) || id === "bastion");
-    const boost = enemy.team.includes("mercy") && damage.some(id => core.includes(id) && matchMainDamage.includes(id));
-    intent = boost
-      ? `${names(core)}의 화력에 메르시의 증폭을 더해 우리가 접근하는 동안 체력을 깎는 포킹 조합이에요.`
-      : `${names(core)} 중심으로 멀리서부터 우리 체력을 깎는 포킹 조합이에요.`;
-  } else if (enemy.snipers.length) {
-    intent = `${names(enemy.snipers)}가 긴 사선을 잡아 우리 팀이 열린 곳을 건너는 순간을 노릴 수 있어요.`;
-  } else if (edge < 0 && enemy.heroes.length) {
-    intent = `${names(enemy.heroes)}의 원거리 화력이 우리가 접근하는 길에 집중될 수 있어요.`;
-  } else if (edge > 0) {
-    intent = "상대가 엄폐물을 따라 거리를 좁혀 우리 딜러가 편하게 쏠 공간을 줄일 수 있어요.";
-  } else {
-    intent = "먼저 옆각을 잡은 상대가 우리 본대에 화력을 모을 수 있어요.";
-  }
+  const intent = enemyPlan(enemy, names);
   return `<section class="match-analysis"><div class="match-analysis-heading"><span class="eyebrow">04</span><h2>조합 비교</h2></div><div class="match-advice-grid"><article class="match-advice-card"><span class="eyebrow">우리 팀</span>${lineupStrip(ally.team,state.mine)}<h3>${action}</h3><p>${teamPlan(ally, contested && edge < 0 ? 0 : edge, names)}</p>${highGroundAdvice(map,state.side)}</article><article class="match-advice-card"><span class="eyebrow">상대 팀</span>${lineupStrip(enemy.team)}<h3>예상되는 상대 움직임</h3><p>${intent}</p></article></div></section>`;
 }
 

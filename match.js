@@ -507,6 +507,83 @@ function matchAnalysis(state) {
     matchTankAdvantages.some(([a, b]) => a === enemy && b === ally) ? "disadvantage" : "unlisted";
   return { alerts, tank, healing, targets };
 }
+const pokeGroups = [
+  [["orisa", "sigma", "domina"]],
+  [["widowmaker", "hanzo", "freja"], ["ashe", "pharah"], ["emre"], ["soldier-76"], ["cassidy"], ["shion"]],
+  [["zenyatta"], ["wuyang", "ana", "illari"], ["baptiste"]],
+];
+
+function pokeProfile(team) {
+  const groups = pokeGroups.map(tiers => team.filter(id => tiers.some(tier => tier.includes(id))));
+  if (team.includes("junkrat")) groups[1].push("junkrat");
+  return { team, groups, heroes: groups.flat(), snipers: team.filter(id => matchSnipers.includes(id)) };
+}
+
+// Rank only comparable roles. Junkrat's position within the Emre–Cassidy range is unresolved.
+function distanceEdge(a, b) {
+  const count = a.heroes.length - b.heroes.length;
+  if (count) return Math.sign(count);
+  const edges = new Set();
+  for (const [role, tiers] of pokeGroups.entries()) {
+    const left = a.groups[role].filter(id => !b.groups[role].includes(id));
+    const right = b.groups[role].filter(id => !a.groups[role].includes(id));
+    if (left.length !== right.length) return 0;
+    if (role === 1 && left.length === 1 && [left[0], right[0]].includes("junkrat")) {
+      const other = left[0] === "junkrat" ? right[0] : left[0];
+      if (["widowmaker", "ashe", "soldier-76", "cassidy"].includes(other)) {
+        edges.add(left[0] === "junkrat" ? -1 : 1);
+      } else return 0;
+      continue;
+    }
+    if (left.includes("junkrat") || right.includes("junkrat")) return 0;
+    const ranks = ids => ids.map(id => tiers.findIndex(t => t.includes(id))).sort((x,y) => x-y);
+    const l = ranks(left), r = ranks(right);
+    l.forEach((rank,i) => { if (rank !== r[i]) edges.add(Math.sign(r[i] - rank)); });
+  }
+  return edges.size === 1 ? [...edges][0] : 0;
+}
+
+function teamPlan(profile, edge, names) {
+  const {team, heroes, snipers} = profile;
+  const damage = team.slice(1, 3);
+  let plan;
+  if (team[0] === "winston" && damage.every(id => matchMainDamage.includes(id))) {
+    plan = `윈스턴이 방벽으로 ${names(damage)}의 자리를 지켜주면 두 딜러가 계속 화력을 낼 수 있어요.`;
+  } else if (team[0] === "winston" && damage.every(id => matchInfiltrators.includes(id))) {
+    plan = `윈스턴과 ${names(damage)}가 같은 순간에 한 명을 물어 먼저 잡는 게 중요해요.`;
+  } else if (team[0] === "reinhardt" && damage.includes("reaper")) {
+    plan = "라인하르트와 리퍼가 함께 거리를 좁혀 상대 탱커를 압박하세요.";
+  } else if (edge > 0 && heroes.length) {
+    plan = `${names(heroes)}의 공격이 닿는 자리를 유지하면서 상대가 접근하는 동안 체력을 깎으세요.`;
+  } else if (edge < 0) {
+    plan = "엄폐물을 따라 아군이 함께 공격할 수 있는 거리까지 전진하세요.";
+  } else {
+    plan = "엄폐물에서 다음 자리로 이동하기 전에 딜러가 쏠 각과 아군 힐이 닿는지 함께 확인하세요.";
+  }
+  if (snipers.length) plan += ` ${names(snipers)}의 사선을 길게 확보하세요.`;
+  if (team.includes("mercy") && damage.some(id => matchMainDamage.includes(id) && heroes.includes(id))) plan += " 메르시는 원거리에서 쏘는 메인딜의 화력을 증폭할 수 있어요.";
+  if (team.includes("junkrat")) plan += " 정크랫이 잡은 좁은 방을 상대가 지나야 하면 그 입구를 압박하세요.";
+  return plan;
+}
+
+function compositionComparisonHTML(state) {
+  const ally = pokeProfile(state.ally), enemy = pokeProfile(state.enemy);
+  const names = ids => ids.map(id => esc(matchHeroes.find(h => h.id === id).name)).join("·");
+  const edge = distanceEdge(ally, enemy);
+  const shorter = edge > 0 ? enemy : ally;
+  const longer = edge > 0 ? ally : enemy;
+  const rushIntoWinston = shorter.team[0] === "reinhardt" && shorter.team.includes("reaper") && longer.team[0] === "winston";
+  const contested = edge && shorter.snipers.length && !longer.snipers.length && !longer.team.includes("zenyatta") && !rushIntoWinston;
+  let summary = "교전 거리의 우위가 뚜렷하지 않아요. 양 팀 딜러가 어느 자리에서 계속 쏠 수 있는지 살펴보세요.";
+  if (contested) {
+    summary = `${edge > 0 ? "우리 팀" : "상대 팀"}이 포킹을 이어가기 좋지만, ${names(shorter.snipers)}의 사선에 따라 편한 교전 거리가 달라져요.`;
+  } else if (edge) {
+    summary = edge > 0 ? "우리 팀은 거리를 유지하고, 상대 팀은 거리를 좁히는 편이 좋아요." : "우리 팀은 거리를 좁히고, 상대 팀은 거리를 유지하는 편이 좋아요.";
+  }
+  const side = (label, profile, advantage) => `<article class="match-advice-card"><h3>${label} 기본 운영</h3><p>${teamPlan(profile, advantage, names)}</p></article>`;
+  return `<section class="match-analysis"><div class="match-analysis-heading"><span class="eyebrow">04 / TEAM PLAY</span><h2>조합 비교</h2><p>${summary}</p></div><div class="match-advice-grid">${side("우리 팀", ally, contested ? 0 : edge)}${side("상대 팀", enemy, contested ? 0 : -edge)}</div></section>`;
+}
+
 function matchAnalysisHTML(state) {
   const result = matchAnalysis(state);
   const name = id => matchHeroes.find(h => h.id === id)?.name || id;
@@ -843,7 +920,7 @@ function matchPage() {
     }
     const map = matchMaps.find((m) => m.id === state.map);
     const side = state.side === "attack" ? "공격" : "수비";
-    summary.innerHTML = `<span class="eyebrow">MATCH READY</span><h2 id="match-summary-title" tabindex="-1">이번 판 정보가 준비됐어요.</h2><p class="match-summary-map">${map ? `${esc(map.name)} · ${map.mode}${map.sided ? " · 우리 팀 " + side : ""}` : "맵 미선택"}</p><div class="match-summary-teams">${["ally", "enemy"].map((team) => `<div><h3>${team === "ally" ? "우리 팀" : "상대 팀"}</h3><ul>${state[team].map((id, i) => `<li><span>${matchSlots[i].label}</span><b>${esc(heroName(id))}${team === "ally" && state.mine === i ? " <em>나</em>" : ""}</b></li>`).join("")}</ul></div>`).join("")}</div>${matchAnalysisHTML(state)}`;
+    summary.innerHTML = `<span class="eyebrow">MATCH READY</span><h2 id="match-summary-title" tabindex="-1">이번 판 정보가 준비됐어요.</h2><p class="match-summary-map">${map ? `${esc(map.name)} · ${map.mode}${map.sided ? " · 우리 팀 " + side : ""}` : "맵 미선택"}</p><div class="match-summary-teams">${["ally", "enemy"].map((team) => `<div><h3>${team === "ally" ? "우리 팀" : "상대 팀"}</h3><ul>${state[team].map((id, i) => `<li><span>${matchSlots[i].label}</span><b>${esc(heroName(id))}${team === "ally" && state.mine === i ? " <em>나</em>" : ""}</b></li>`).join("")}</ul></div>`).join("")}</div>${matchAnalysisHTML(state)}${compositionComparisonHTML(state)}`;
     summary.hidden = false;
     document
       .querySelector("#match-summary-title")

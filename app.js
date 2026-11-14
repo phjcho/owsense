@@ -428,7 +428,7 @@ function rolePage() {
   const content = blocks.slice(start + 1, end);
   const r = roles[idx];
   document.querySelector("#role-content").innerHTML =
-    `<div class="role-detail"><section class="article role-guide"><span class="eyebrow">01 / 역할군 가이드</span><h2 id="${guideAnchor(blocks[start].text)}">${labels[idx]} — ${r[1]}</h2>${content.map((b) => (b.type === "image" ? `<img src="${b.src}" alt="${esc(b.alt)}" loading="eager" fetchpriority="high" decoding="async">` : b.type === "heading" ? `<h3 id="${guideAnchor(b.text)}">${esc(b.text)}</h3>` : `<p>${esc(b.text || "")}</p>`)).join("")}</section><aside class="role-tasks card"><div class="card-body"><span class="eyebrow">02 / 이번 한타</span><h2>이번 한타, 내 할 일은?</h2><p>싸우기 전과 싸운 뒤, 하나씩 확인해보세요.</p>${r[2].map((t, j) => `<label class="check"><input type="checkbox" data-check="role-${idx}-${j}" ${saved["role-" + idx + "-" + j] ? "checked" : ""}><span>${t}</span></label>`).join("")}<small>체크는 이 브라우저에 남아요. 다음 한타 전 새로 시작하세요.</small><button id="new-fight" class="btn light" style="margin-top:16px">새 한타 시작</button><p id="fight-reset-status" role="status" style="font-size:12px"></p><div class="actions"><a class="btn light" href="#guide/5">바퀴벌레론 읽기 ↗</a></div></div></aside></div>`;
+    `<div class="role-detail"><section class="article role-guide"><span class="eyebrow">01 / 역할군 가이드</span><h2 id="${guideAnchor(blocks[start].text)}">${labels[idx]} — ${r[1]}</h2>${content.map((b) => (b.type === "image" ? `<img src="${b.src}" alt="${esc(b.alt)}" loading="eager" fetchpriority="high" decoding="async">` : b.type === "heading" ? `<h3 id="${guideAnchor(b.text)}">${esc(b.text)}</h3>` : `<p>${esc(b.text || "")}</p>`)).join("")}</section><aside class="role-tasks card"><div class="card-body"><span class="eyebrow">02 / 체크리스트</span><h2>내가 해야 할 일</h2><p>싸우기 전과 싸운 뒤, 하나씩 확인해보세요.</p>${r[2].map((t, j) => `<label class="check"><input type="checkbox" data-check="role-${idx}-${j}" ${saved["role-" + idx + "-" + j] ? "checked" : ""}><span>${t}</span></label>`).join("")}<button id="new-fight" class="btn light" style="margin-top:16px">체크 초기화</button><p id="fight-reset-status" role="status" style="font-size:12px"></p><div class="actions"><a class="btn light" href="#guide/5">바퀴벌레론 읽기 ↗</a></div></div></aside></div>`;
   document.querySelectorAll("[data-check]").forEach(
     (x) =>
       (x.onchange = () => {
@@ -445,7 +445,7 @@ function rolePage() {
     });
     persist();
     document.querySelector("#fight-reset-status").textContent =
-      labels[idx] + " 체크를 초기화했어요. 새로운 한타를 준비하세요.";
+      labels[idx] + " 체크를 초기화했어요.";
   };
 }
 function render() {

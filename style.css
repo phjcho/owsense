@@ -1810,3 +1810,9 @@ footer small {
 
 .situation-row .map-unit.inactive { background:#e4e4e0; border-color:#92958f; color:#646962; border-style:dashed; font-size:8px; text-align:center; }
 .situation-field:has(.situation-row:nth-child(4)) { gap:20px; }
+
+.map-wall { width:96px; height:48px; display:block; flex-shrink:0; }
+
+.terrain-scene { display:block; width:100%; height:auto; font-family:inherit; }
+.question .terrain-caption { margin:0; padding:4px 20px 12px; font-size:13px; color:var(--muted); }
+@media(max-width:600px) { .terrain-scene { min-width:520px; } .participation-map:has(.terrain-scene) { overflow-x:auto; } }

@@ -694,6 +694,8 @@ function fightPlanHTML(state) {
     ? " 메르시가 메인딜의 화력을 강화할 수 있어요." : "";
   const goal = planAction(allyGoal, allyHigh, use) +
     (defense ? defenseEnemyCard : planAction(enemyGoal, enemyHigh, deny + enemyAdvice + mercyEnemyNote));
+  const tankPressureAction = planAction("상대 탱커를 압박해 우리 탱커를 도우세요", theirs([enemy.tank]),
+        "상대 탱커가 우리 탱커와 맞붙으면 함께 공격하세요. 상대가 편하게 앞으로 나오지 못하게 밀어내고, 물러나면 우리 탱커가 공간을 잡도록 도와주세요.");
   let actions;
   if (role === "탱커") {
     actions = planAction("이 아군을 내 등 뒤에 두세요", ours(core), "코너를 돌기 전에 뒤를 보세요. 아군 딜러가 쏠 수 있고 힐러가 나를 볼 수 있는 곳에서 앞을 잡으세요.")
@@ -701,7 +703,8 @@ function fightPlanHTML(state) {
         defense ? "입구를 지키다가 상대가 물러나면 우리 딜러 앞에 다시 서세요." : "상대가 2층에 있으면 정면과 옆에서 함께 밀어내세요. 우리 뒷라인이 따라올 시간을 주세요.");
   } else if (role === "메인딜") {
     actions = planAction(defense ? "이 아군이 지키는 고지대에서 쏘세요" : "이 아군이 열어준 자리와 고지대를 사용하세요", ours([ally.tank, ...ally.sideDamage]), "앞에서 공간을 만들어준 동안 그 자리에서 화력을 내세요." + highGroundNote)
-      + planAction("이 힐러와 함께 움직이세요", ours(ally.backSupport), "다음 자리로 옮길 때 힐러의 위치부터 보세요. 힐을 받을 수 있는 곳에서 다음 사선을 잡으세요.");
+      + planAction("이 힐러와 함께 움직이세요", ours(ally.backSupport), "다음 자리로 옮길 때 힐러의 위치부터 보세요. 힐을 받을 수 있는 곳에서 다음 사선을 잡으세요.")
+      + tankPressureAction;
   } else if (role === "섭딜") {
     const breach = planAction(guards.length ? "사이드를 막는 상대의 방역을 뚫으세요" : "비어 있는 사이드로 들어가세요", theirs(guards), "우리 탱커가 정면에서 붙을 때 사이드로 들어가세요. " + (guards.length ? "위 영웅들과 싸워 이겨 길을 열거나, 이들이 지키지 않는 길로 우회하세요. 방역을 통과하면 상대 메인딜·섭힐을 압박하세요." : "열린 길로 들어가 상대 메인딜·섭힐을 압박하세요."));
     const pressure = planAction("이 상대가 편하게 딜·힐하지 못하게 압박하세요", theirs(backline), "옆에서 공격해 상대의 시선을 끌어주세요. 상대가 우리 본대를 보다가 나를 보거나 생존기 등의 스킬을 쓰면, 우리 팀이 싸울 틈이 생겨요.");
@@ -711,8 +714,7 @@ function fightPlanHTML(state) {
         "우리 탱커가 노리는 대상을 확인하고, 진입 전에 그 대상을 함께 공격할 수 있는 위치를 미리 잡으세요. 탱커가 진입하면 타이밍을 맞춰 같은 대상에게 공격을 집중하세요.") + actions;
     }
     if (["vendetta", "reaper", "symmetra", "mei"].includes(me)) {
-      actions += planAction("상대 탱커를 압박해 우리 탱커를 도우세요", theirs([enemy.tank]),
-        "상대 탱커가 우리 탱커와 맞붙으면 함께 공격하세요. 상대가 편하게 앞으로 나오지 못하게 밀어내고, 물러나면 우리 탱커가 공간을 잡도록 도와주세요.");
+      actions += tankPressureAction;
     }
   } else if (me === "mercy") {
     actions = planAction("이 딜러의 화력을 강화해주세요", ours(ally.mainDamage.length ? ally.mainDamage : ally.sideDamage),

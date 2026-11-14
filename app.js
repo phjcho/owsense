@@ -93,8 +93,8 @@ function participationMap(q) {
   const d = q.diagram;
   if (!d) return "";
   if (d.type === "situation") {
-    const rows = d.rows.map(row => `<div class="situation-row ${row.team === "terrain" ? "situation-terrain" : ""}"><span class="map-label">${esc(row.label)}</span>${row.units.length ? `<div class="map-group">${row.units.map(label => `<span class="map-unit ${row.team === "enemy" || (row.team === "mixed" && label === "적") ? "enemy" : "ally"}">${esc(label)}</span>`).join("")}</div>` : ""}</div>`).join("");
-    return `<section class="participation-map" aria-label="현재 배치"><div class="map-heading"><span>현재 배치</span><small>개념도 · 실제 거리와 무관</small></div><div class="situation-field">${rows}</div><div class="map-legend"><span><i class="map-key ally"></i>아군</span><span><i class="map-key enemy"></i>상대</span><span>문제에 언급된 인원·상황만 표시</span></div></section>`;
+    const rows = d.rows.map(row => `<div class="situation-row ${row.team === "terrain" ? "situation-terrain" : ""}"><span class="map-label">${esc(row.label)}</span>${row.units.length ? `<div class="map-group">${row.units.map(label => `<span class="map-unit ${row.team === "enemy" || (row.team === "mixed" && label.startsWith("적")) ? "enemy" : "ally"}${/사망|리스폰/.test(label) ? " inactive" : ""}">${esc(label)}</span>`).join("")}</div>` : ""}</div>`).join("");
+    return `<section class="participation-map" aria-label="현재 배치"><div class="map-heading"><span>현재 배치</span><small>개념도 · 실제 거리와 무관</small></div><div class="situation-field">${rows}</div><div class="map-legend"><span><i class="map-key ally"></i>아군</span><span><i class="map-key enemy"></i>상대</span><span>${d.roster === "full" ? "양 팀 5명 전체 표시 · 회색은 교전 참여 불가" : q.id === "range-longer-reach" ? "두 영웅의 사거리 비교 · 1대1 장면" : "문제에 제시된 교전 상황"}</span></div></section>`;
   }
   const unit = (team, n) =>
     Array.from(

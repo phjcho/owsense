@@ -102,13 +102,33 @@ function terrainScene(q) {
   }
   return `<section class="participation-map"><div class="map-heading"><span>현재 배치</span><small>옆에서 본 개념도 · 실제 거리와 무관</small></div><svg class="terrain-scene" viewBox="0 0 760 380" role="img" aria-label="${esc(caption)}">${art}</svg><p class="terrain-caption">${caption}</p><div class="map-legend"><span><i class="map-key ally"></i>아군</span><span><i class="map-key enemy"></i>상대</span><span>${q.id === 'highground' ? '점선 인물 · 상대가 활용할 수 있는 자리 / 점선 · 공격 각도' : '점선 · 화물 주변 시야'}</span></div></section>`;
 }
+function coverScene(q) {
+  const unit = (x,y,label,enemy=false) => `<g transform="translate(${x} ${y})"><circle cy="-48" r="12" fill="#fffdf8" stroke="${enemy ? '#b57569' : '#547f9c'}" stroke-width="3"/><path d="M-18 0v-13a18 18 0 0136 0v13" fill="${enemy ? '#f3dfda' : '#dceaf5'}" stroke="${enemy ? '#b57569' : '#547f9c'}" stroke-width="3"/><text y="24" text-anchor="middle" font-size="15" fill="#203c45">${label}</text></g>`;
+  const wall = (x,y,w=60,h=95) => `<g><rect x="${x}" y="${y}" width="${w}" height="${h}" rx="3" fill="#d0c8b6" stroke="#777967" stroke-width="3"/><path d="M${x} ${y+h/3}h${w}m-${w} ${h/3}h${w}M${x+w/2} ${y}v${h/3}m0 ${h/3}v${h/3}" stroke="#91927f" stroke-width="2"/></g>`;
+  let art,caption;
+  if (['cover','cover-reload'].includes(q.id)) {
+    caption = q.id === 'cover' ? '나는 열린 곳에서 공격받고 있어요. 벽은 내 옆에 있으며, 아직 사격을 막아주지 않아요.' : '나는 벽 옆의 열린 사선에 있어요. 탄약을 다 썼고, 바로 벽 뒤로 숨을 수 있어요.';
+    art = `${unit(95,260,'상대',true)}<path d="M125 215H480" stroke="#b57569" stroke-width="3" stroke-dasharray="7 6"/>${unit(500,260,'나')}${wall(600,165)}<text x="630" y="148" text-anchor="middle" font-size="14" fill="#607867">바로 옆의 벽</text>${q.id === 'cover' ? unit(400,330,'힐러') : ''}<text x="295" y="185" text-anchor="middle" fill="#b57569" font-size="15">현재 사격이 닿는 열린 공간</text>`;
+  } else if(q.id === 'cover-reengage') {
+    caption = '나는 벽 뒤에서 회복과 재장전을 마쳤어요. 벽 옆에는 다시 공격할 수 있는 열린 자리가 있어요.';
+    art = `${unit(95,260,'상대',true)}${wall(395,160,60,100)}${unit(500,260,'나')}<path d="M125 215H395" stroke="#b57569" stroke-width="2" stroke-dasharray="7 6"/><text x="500" y="150" text-anchor="middle" font-size="15" fill="#547f9c">회복·재장전 완료</text><text x="250" y="330" text-anchor="middle" font-size="15" fill="#607867">벽 옆 열린 사선에서는 아군이 교전 중</text>`;
+  } else if(q.id === 'applied-heal-sight') {
+    caption = '벽이 적의 사격을 막고 있지만, 아군 지원가의 회복 시야도 가리고 있어요. 같은 벽을 따라 옆으로 이동할 공간이 있어요.';
+    art = `${unit(95,260,'상대',true)}${wall(300,155,65,105)}${unit(440,260,'나')}${wall(530,155,55,105)}<rect x="365" y="155" width="165" height="20" fill="#d0c8b6" stroke="#777967" stroke-width="3"/>${unit(655,260,'힐러')}<path d="M125 215H300" stroke="#b57569" stroke-width="2" stroke-dasharray="6 6"/><path d="M625 215H585" stroke="#547f9c" stroke-width="2" stroke-dasharray="6 6"/><text x="235" y="125" text-anchor="middle" font-size="15" fill="#607867">적 사격 차단</text><text x="580" y="125" text-anchor="middle" font-size="15" fill="#607867">회복 시야도 차단</text><text x="420" y="330" text-anchor="middle" font-size="15" fill="#607867">벽 옆으로 이동할 공간 있음 · 개념상 펼친 배치</text>`;
+  } else {
+    caption = q.id === 'cover-route' ? '직선 길은 적에게 노출돼요. 옆길에는 이동하며 사용할 수 있는 벽이 이어져 있어요.' : '정면은 내 유효 사거리 밖이에요. 사이드의 벽을 이용하면 노출을 줄이며 접근할 수 있어요.';
+    art = `${unit(650,260,'상대',true)}${unit(100,260,'나')}<path d="M135 210H615" stroke="#b57569" stroke-width="2" stroke-dasharray="7 6"/><text x="375" y="185" text-anchor="middle" font-size="15" fill="#b57569">정면 · 적 사격에 노출</text>${wall(220,320,70,45)}${wall(370,320,70,45)}${wall(520,320,70,45)}<text x="375" y="405" text-anchor="middle" font-size="15" fill="#607867">사이드 경로 · 벽을 이용하며 이동 가능 / 아군 지원 유지</text>`;
+  }
+  const height = ['cover-route','range-shorter-reach'].includes(q.id) ? 440 : 370;
+  return `<section class="participation-map"><div class="map-heading"><span>현재 배치</span><small>개념도 · 실제 거리와 무관</small></div><svg class="terrain-scene" viewBox="0 0 760 ${height}" role="img" aria-label="${esc(caption)}">${art}</svg><p class="terrain-caption">${caption}</p><div class="map-legend"><span><i class="map-key ally"></i>아군</span><span><i class="map-key enemy"></i>상대</span><span>점선 · 공격 또는 회복 시야 / 상황에 등장하는 대상만 표시</span></div></section>`;
+}
 function participationMap(q) {
   const d = q.diagram;
+  if (["cover", "cover-reload", "cover-reengage", "applied-heal-sight", "cover-route", "range-shorter-reach"].includes(q.id)) return coverScene(q);
   if (["highground", "applied-next-highground"].includes(q.id)) return terrainScene(q);
   if (!d) return "";
   if (d.type === "situation") {
-    const wallIcon = `<svg class="map-wall" viewBox="0 0 96 48" role="img" aria-label="벽 · 엄폐물"><rect x="2" y="2" width="92" height="44" rx="3" fill="#d0c8b6" stroke="#777967" stroke-width="3"/><path d="M3 17h90M3 31h90M25 3v14M66 3v14M45 17v14M25 31v14M66 31v14" fill="none" stroke="#8c8e7d" stroke-width="2"/></svg>`;
-    const rows = d.rows.map(row => `<div class="situation-row ${row.team === "terrain" ? "situation-terrain" : ""}">${/벽|엄폐|모퉁이/.test(row.label) ? wallIcon : ""}<span class="map-label">${esc(row.label)}</span>${row.units.length ? `<div class="map-group">${row.units.map(label => `<span class="map-unit ${row.team === "enemy" || (row.team === "mixed" && label.startsWith("적")) ? "enemy" : "ally"}${/사망|리스폰/.test(label) ? " inactive" : ""}">${esc(label)}</span>`).join("")}</div>` : ""}</div>`).join("");
+    const rows = d.rows.map(row => `<div class="situation-row ${row.team === "terrain" ? "situation-terrain" : ""}"><span class="map-label">${esc(row.label)}</span>${row.units.length ? `<div class="map-group">${row.units.map(label => `<span class="map-unit ${row.team === "enemy" || (row.team === "mixed" && label.startsWith("적")) ? "enemy" : "ally"}${/사망|리스폰/.test(label) ? " inactive" : ""}">${esc(label)}</span>`).join("")}</div>` : ""}</div>`).join("");
     return `<section class="participation-map" aria-label="현재 배치"><div class="map-heading"><span>현재 배치</span><small>개념도 · 실제 거리와 무관</small></div><div class="situation-field">${rows}</div><div class="map-legend"><span><i class="map-key ally"></i>아군</span><span><i class="map-key enemy"></i>상대</span><span>${q.id === "range-longer-reach" ? "두 영웅의 사거리 비교 · 1대1 장면" : "상황에 등장하는 대상만 표시 · 전체 인원수와 무관"}</span></div></section>`;
   }
   const unit = (team, n) =>

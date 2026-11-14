@@ -89,12 +89,27 @@ function practice() {
       }),
   );
 }
+function terrainScene(q) {
+  const person = (x, y, team, label, ghost = false) => `<g transform="translate(${x} ${y})" ${ghost ? 'opacity=".7" stroke-dasharray="5 4"' : ''}><circle cx="0" cy="-48" r="12" fill="#fffdf8" stroke="${team === 'enemy' ? '#b57569' : '#547f9c'}" stroke-width="3"/><path d="M-18 0v-13a18 18 0 0136 0V0" fill="${team === 'enemy' ? '#f3dfda' : '#dceaf5'}" stroke="${team === 'enemy' ? '#b57569' : '#547f9c'}" stroke-width="3"/><text y="24" text-anchor="middle" fill="#203c45" stroke="none" font-size="14">${label}</text></g>`;
+  const ground = '<path d="M30 285H730" stroke="#607867" stroke-width="4" stroke-linecap="round"/>';
+  let art, caption;
+  if (q.id === 'highground') {
+    caption = '아군 메인딜러는 1층에 있어요. 옆 2층은 상대가 사용하면 아군을 내려다볼 수 있는 자리예요.';
+    art = `${ground}<path d="M420 285v-45h65v-45h65v-45h150v135" fill="#dce3d3" stroke="#607867" stroke-width="3" stroke-linejoin="round"/>${person(625,150,'enemy','상대 메인딜러 · 사용 가능',true)}<path d="M598 146L290 245M600 138L370 245" stroke="#b57569" stroke-width="2" stroke-dasharray="6 7"/><text x="691" y="190" font-size="15" fill="#607867">2층</text>${person(125,285,'ally','메인딜러')}${person(265,285,'ally','탱커')}${person(360,285,'ally','서브딜러')}<text x="105" y="220" font-size="14" fill="#547f9c">아래층에서 싸우는 중</text><text x="320" y="352" text-anchor="middle" font-size="14" fill="#607867">탱커·서브딜러는 아군 지원을 받으며 2층 견제 가능</text>`;
+  } else {
+    caption = '화물이 모퉁이를 지나가 현재 2층에서는 보이지 않아요. 다음 2층에서는 화물 주변을 볼 수 있어요.';
+    art = `${ground}<path d="M50 285V145h200v140M490 285V145h200v140" fill="#dce3d3" stroke="#607867" stroke-width="3"/>${person(130,145,'ally','나 · 현재 2층')}<rect x="310" y="110" width="55" height="175" rx="3" fill="#d0c8b6" stroke="#777967" stroke-width="3"/><text x="338" y="97" text-anchor="middle" font-size="14" fill="#607867">모퉁이</text><rect x="405" y="251" width="60" height="25" rx="5" fill="#d8c397" stroke="#8c7951" stroke-width="2"/><circle cx="417" cy="280" r="6" fill="#8c7951"/><circle cx="453" cy="280" r="6" fill="#8c7951"/><text x="435" y="315" text-anchor="middle" font-size="14" fill="#607867">화물</text><text x="590" y="125" text-anchor="middle" font-size="15" fill="#607867">다음 2층</text><path d="M570 155L449 245" stroke="#607867" stroke-width="2" stroke-dasharray="6 7"/><path d="M158 154L310 225" stroke="#a8aaa1" stroke-width="2" stroke-dasharray="5 6"/><path d="M299 213l22 22m0-22l-22 22" stroke="#b57569" stroke-width="3"/><text x="380" y="352" text-anchor="middle" font-size="14" fill="#607867">아군 지원과 엄폐를 유지하며 이동할 시간 있음</text>`;
+  }
+  return `<section class="participation-map"><div class="map-heading"><span>현재 배치</span><small>옆에서 본 개념도 · 실제 거리와 무관</small></div><svg class="terrain-scene" viewBox="0 0 760 380" role="img" aria-label="${esc(caption)}">${art}</svg><p class="terrain-caption">${caption}</p><div class="map-legend"><span><i class="map-key ally"></i>아군</span><span><i class="map-key enemy"></i>상대</span><span>${q.id === 'highground' ? '점선 인물 · 상대가 활용할 수 있는 자리 / 점선 · 공격 각도' : '점선 · 화물 주변 시야'}</span></div></section>`;
+}
 function participationMap(q) {
   const d = q.diagram;
+  if (["highground", "applied-next-highground"].includes(q.id)) return terrainScene(q);
   if (!d) return "";
   if (d.type === "situation") {
-    const rows = d.rows.map(row => `<div class="situation-row ${row.team === "terrain" ? "situation-terrain" : ""}"><span class="map-label">${esc(row.label)}</span>${row.units.length ? `<div class="map-group">${row.units.map(label => `<span class="map-unit ${row.team === "enemy" || (row.team === "mixed" && label.startsWith("적")) ? "enemy" : "ally"}${/사망|리스폰/.test(label) ? " inactive" : ""}">${esc(label)}</span>`).join("")}</div>` : ""}</div>`).join("");
-    return `<section class="participation-map" aria-label="현재 배치"><div class="map-heading"><span>현재 배치</span><small>개념도 · 실제 거리와 무관</small></div><div class="situation-field">${rows}</div><div class="map-legend"><span><i class="map-key ally"></i>아군</span><span><i class="map-key enemy"></i>상대</span><span>${d.roster === "full" ? "양 팀 5명 전체 표시 · 회색은 교전 참여 불가" : q.id === "range-longer-reach" ? "두 영웅의 사거리 비교 · 1대1 장면" : "문제에 제시된 교전 상황"}</span></div></section>`;
+    const wallIcon = `<svg class="map-wall" viewBox="0 0 96 48" role="img" aria-label="벽 · 엄폐물"><rect x="2" y="2" width="92" height="44" rx="3" fill="#d0c8b6" stroke="#777967" stroke-width="3"/><path d="M3 17h90M3 31h90M25 3v14M66 3v14M45 17v14M25 31v14M66 31v14" fill="none" stroke="#8c8e7d" stroke-width="2"/></svg>`;
+    const rows = d.rows.map(row => `<div class="situation-row ${row.team === "terrain" ? "situation-terrain" : ""}">${/벽|엄폐|모퉁이/.test(row.label) ? wallIcon : ""}<span class="map-label">${esc(row.label)}</span>${row.units.length ? `<div class="map-group">${row.units.map(label => `<span class="map-unit ${row.team === "enemy" || (row.team === "mixed" && label.startsWith("적")) ? "enemy" : "ally"}${/사망|리스폰/.test(label) ? " inactive" : ""}">${esc(label)}</span>`).join("")}</div>` : ""}</div>`).join("");
+    return `<section class="participation-map" aria-label="현재 배치"><div class="map-heading"><span>현재 배치</span><small>개념도 · 실제 거리와 무관</small></div><div class="situation-field">${rows}</div><div class="map-legend"><span><i class="map-key ally"></i>아군</span><span><i class="map-key enemy"></i>상대</span><span>${q.id === "range-longer-reach" ? "두 영웅의 사거리 비교 · 1대1 장면" : "상황에 등장하는 대상만 표시 · 전체 인원수와 무관"}</span></div></section>`;
   }
   const unit = (team, n) =>
     Array.from(

@@ -654,10 +654,10 @@ function fightPlanHTML(state) {
   const lowHealing = supports.every(id => !matchHealingTiers[0].includes(id));
   const switchCopy = state.mine >= 3
     ? "현재 힐러 조합은 본대의 회복이 부족해요. 둘 중 한 명은 섭힐(아나·키리코·독트린·주노·바티스트·모이라)로 변경해주세요. 섭힐이 탱커와 메인딜의 회복을 맡고, 남은 메인힐은 사이드 지원과 아군 보호를 맡아주세요."
-    : "현재 힐러 조합은 본대의 회복이 부족해요. 우리 힐러 중 한 명이 섭힐(아나·키리코·독트린·주노·바티스트·모이라)로 변경하도록 요청해주세요. 변경이 어렵다면 엄폐물을 활용하고, 아군이 회복할 틈을 보며 싸우세요.";
+    : "현재 힐러 조합은 본대의 회복이 부족하다는 점을 염두에 두세요. 우리 힐러 중 한 명이 섭힐(아나·키리코·독트린·주노·바티스트·모이라)로 변경하도록 요청해주세요. 변경이 어렵다면 엄폐물로 받는 피해를 줄이고, 아군이 충분히 회복할 시간을 확보하며 싸우세요.";
   const switchTitle = state.mine >= 3
     ? "힐러 한 명은 섭힐로 변경해주세요!"
-    : "힐러 한 명에게 섭힐로 변경을 요청하세요";
+    : "우리 팀의 본대 회복이 부족한 점을 염두에 두세요";
   const switchCard = lowHealing ? `<article class="match-advice-card warning plan-goal"><span class="eyebrow">우리 팀 힐러 조합</span><h3>${switchTitle}</h3>${ours(supports)}<p>${switchCopy}</p></article>` : "";
   const defense = state.side === "defense", attack = state.side === "attack";
   const core = [...ally.mainDamage, ...ally.backSupport];

@@ -91,7 +91,11 @@ function practice() {
 }
 function participationMap(q) {
   const d = q.diagram;
-  if (!d || d.type !== "participation") return scene(q);
+  if (!d) return "";
+  if (d.type === "situation") {
+    const rows = d.rows.map(row => `<div class="situation-row ${row.team === "terrain" ? "situation-terrain" : ""}"><span class="map-label">${esc(row.label)}</span>${row.units.length ? `<div class="map-group">${row.units.map(label => `<span class="map-unit ${row.team === "enemy" || (row.team === "mixed" && label === "적") ? "enemy" : "ally"}">${esc(label)}</span>`).join("")}</div>` : ""}</div>`).join("");
+    return `<section class="participation-map" aria-label="현재 배치"><div class="map-heading"><span>현재 배치</span><small>개념도 · 실제 거리와 무관</small></div><div class="situation-field">${rows}</div><div class="map-legend"><span><i class="map-key ally"></i>아군</span><span><i class="map-key enemy"></i>상대</span><span>문제에 언급된 인원·상황만 표시</span></div></section>`;
+  }
   const unit = (team, n) =>
     Array.from(
       { length: n },
@@ -145,7 +149,7 @@ function question(id) {
     });
     check.disabled = true;
     check.textContent = "판단 확인 완료";
-    feedback.innerHTML = `<div class="feedback"><h3 tabindex="-1">${selected === q.answer ? "좋아요. 중요한 단서를 찾았어요." : "이 단서를 다시 살펴보세요."}</h3><b>${esc(q.cue)}</b><p>${selected !== q.answer ? esc(q.wrong) + " " : ""}${esc(q.why)}</p><a class="textlink" href="#guide/${q.chapter}">관련 가이드 · ${q.chapter}장 ${esc(guide[q.chapter].title)} ↗</a><br><small>제시된 상황을 위한 연습입니다. 실제 판단은 거리, 지형, 남은 자원에 따라 달라집니다.</small></div><div class="actions"><button id="retry" class="btn light">다시 풀기</button><a class="btn" href="#question/${nextQuestion.id}">다음 상황 →</a></div>`;
+    feedback.innerHTML = `<div class="feedback"><h3 tabindex="-1">${selected === q.answer ? "좋아요. 중요한 단서를 찾았어요." : "이 단서를 다시 살펴보세요."}</h3><b>${esc(q.cue)}</b><p>${selected !== q.answer ? esc(q.wrong) + " " : ""}${esc(q.why)}</p><a class="textlink" href="#guide/${q.chapter}">관련 가이드 · ${q.chapter}장 ${q.chapter === 5 ? "팀 배치와 협력" : esc(guide[q.chapter].title)} ↗</a><br><small>제시된 상황을 위한 연습입니다. 실제 판단은 거리, 지형, 남은 체력과 스킬에 따라 달라집니다.</small></div><div class="actions"><button id="retry" class="btn light">다시 풀기</button><a class="btn" href="#question/${nextQuestion.id}">다음 상황 →</a></div>`;
     feedback.querySelector("h3").focus({ preventScroll: true });
     document.querySelector("#retry").onclick = () => {
       const previous = selected;
@@ -463,7 +467,7 @@ function render() {
     else if (page === "practice") practice();
     else if (page === "question") question(id);
     else if (page === "roles") rolePage();
-    else if (page === "review") matchPage(id === "demo");
+    else if (page === "review") matchPage();
     else home();
   } catch (error) {
     console.error(error);

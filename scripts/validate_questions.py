@@ -28,8 +28,13 @@ def validate(data):
             valid = valid and isinstance(a,dict) and set(a)=={'main','side','joining'}
             if valid:
                 valid = all(type(v) is int and 0<=v<=5 for v in a.values()) and 1<=sum(a.values())<=5 and type(d['enemies']) is int and 1<=d['enemies']<=5
+            if isinstance(d, dict) and d.get('type') == 'situation':
+                rows = d.get('rows')
+                valid = set(d) == {'type','rows'} and isinstance(rows,list) and 1 <= len(rows) <= 5
+                if valid:
+                    valid = all(isinstance(r,dict) and set(r)=={'team','label','units'} and r['team'] in ('ally','enemy','mixed','terrain') and isinstance(r['label'],str) and r['label'].strip() and isinstance(r['units'],list) and len(r['units'])<=5 and all(isinstance(u,str) and u.strip() for u in r['units']) for r in rows)
             if not valid:
-                errors.append(f'{label}: diagram은 participation 형식의 아군 인원과 상대 인원이어야 합니다.')
+                errors.append(f'{label}: 지원하지 않거나 잘못된 diagram 형식입니다.')
         identifier = q.get('id')
         if not isinstance(identifier,str) or not re.fullmatch(r'[a-z0-9]+(?:-[a-z0-9]+)*',identifier):
             errors.append(f'{label}: id는 소문자 영문·숫자·하이픈이어야 합니다.')

@@ -150,6 +150,7 @@ function question(id) {
     location.hash = "practice";
     return;
   }
+  window.owAnalytics?.questionStart(q.id);
   const sequence = questionSequence(q);
   const position = sequence.indexOf(q);
   const nextQuestion = sequence[(position + 1) % sequence.length];
@@ -176,6 +177,7 @@ function question(id) {
   check.onclick = () => {
     if (answered || selected === null) return;
     answered = true;
+    window.owAnalytics?.questionComplete(q.id, questions.length);
     saved[id] = { choice: selected, correct: selected === q.answer };
     persist();
     const mapNote = document.querySelector(".map-explanation");
@@ -499,6 +501,7 @@ function render() {
           (page === "guide" && a.hash === "#guide/0"),
       ),
     );
+  window.owAnalytics?.route(["home","guide","practice","question","roles","review"].includes(page) ? page : "home");
   try {
     if (page === "guide") reader(id, part);
     else if (page === "practice") practice();

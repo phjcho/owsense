@@ -1113,6 +1113,7 @@ function matchPage() {
     const map = matchMaps.find((m) => m.id === state.map);
     const side = state.side === "attack" ? "공격" : "수비";
     summary.innerHTML = `<span class="eyebrow">MATCH READY</span><h2 id="match-summary-title" tabindex="-1">이번 판 정보가 준비됐어요.</h2><p class="match-summary-map">${map ? `${esc(map.name)} · ${map.mode}${map.sided ? " · 우리 팀 " + side : ""}` : "맵 미선택"}</p><div class="match-summary-teams">${["ally", "enemy"].map((team) => `<div><h3>${team === "ally" ? "우리 팀" : "상대 팀"}</h3><ul>${state[team].map((id, i) => `<li><span>${matchSlots[i].label}</span><b>${esc(heroName(id))}${team === "ally" && state.mine === i ? " <em>나</em>" : ""}</b></li>`).join("")}</ul></div>`).join("")}</div>${matchAnalysisHTML(state)}${fightPlanHTML(state)}`;
+    window.owAnalytics?.analysis();
     summary.hidden = false;
     document
       .querySelector("#match-summary-title")

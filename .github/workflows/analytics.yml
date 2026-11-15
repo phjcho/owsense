@@ -1,0 +1,21 @@
+name: Analytics checks
+on:
+  pull_request:
+    paths: ['analytics.js', 'worker/**', 'tests/analytics.test.mjs', 'scripts/build-analytics.mjs', 'db/**', 'drizzle/**', 'package*.json', 'hosting.example.json', '.github/workflows/analytics.yml']
+  push:
+    branches: [main]
+    paths: ['analytics.js', 'worker/**', 'tests/analytics.test.mjs', 'scripts/build-analytics.mjs', 'db/**', 'drizzle/**', 'package*.json', 'hosting.example.json', '.github/workflows/analytics.yml']
+permissions:
+  contents: read
+jobs:
+  analytics:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+          cache: npm
+      - run: npm ci
+      - run: npm run build
+      - run: npm test

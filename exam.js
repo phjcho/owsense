@@ -21,7 +21,7 @@
     if (!raw || raw.version!==data.version || !raw.answers || typeof raw.answers!=='object') return null;
     const answers={};
     for(const q of data.questions) if(Number.isInteger(raw.answers[q.id]) && raw.answers[q.id]>=0 && raw.answers[q.id]<5) answers[q.id]=raw.answers[q.id];
-    return {version:data.version,answers,submitted:raw.submitted===true && Object.keys(answers).length===data.questions.length};
+    return {version:data.version,answers,current:Number.isInteger(raw.current) && raw.current>=0 && raw.current<data.questions.length ? raw.current : 0,submitted:raw.submitted===true && Object.keys(answers).length===data.questions.length};
   }
   function read() {
     if(memory) return memory;
@@ -55,14 +55,26 @@
     root.querySelector('#exam-meter').value=count;
     root.querySelectorAll('[data-jump]').forEach(b=>{
       const i=Number(b.dataset.jump), filled=Number.isInteger(answers[data.questions[i].id]);
-      b.classList.toggle('filled',filled);b.setAttribute('aria-label',`${i+1}번으로 이동 · ${filled?'선택 완료':'미응답'}`);
+      b.classList.toggle('filled',filled);const active=i===(read().current||0);b.classList.toggle('current',active);if(active)b.setAttribute('aria-current','step');else b.removeAttribute('aria-current');b.setAttribute('aria-label',`${i+1}번으로 이동${active?' · 현재 문제':''} · ${filled?'선택 완료':'미응답'}`);
     });
   }
   function run() {
     if(!read())save({version:data.version,answers:{},submitted:false});
     if(read().submitted){result();return;}
-    root.innerHTML=`<section class="exam-shell"><a class="back" href="#check">← 운영 판단 점검</a><div class="eyebrow">오버워치 공통 · 10문제</div><h1>지금, 어떤 선택을 하겠어요?</h1><p>문제마다 행동 하나를 고르세요. 모든 문제를 제출한 뒤 해설을 확인할 수 있어요.</p><p class="exam-meta" id="exam-save-note">답안은 자동 저장돼요. 중간에 나가도 이어서 풀 수 있어요.</p><div class="exam-toolbar"><div><b id="exam-progress" aria-live="polite"></b><progress id="exam-meter" max="10" value="0" aria-label="답안 선택 진행률"></progress></div><div class="exam-jumps" aria-label="문제 바로 가기">${data.questions.map((q,i)=>`<button type="button" data-jump="${i}">${i+1}</button>`).join('')}</div></div><form id="exam-form" novalidate>${data.questions.map((q,i)=>`<fieldset class="exam-question" id="exam-q-${i}" tabindex="-1"><legend><span>QUESTION ${String(i+1).padStart(2,'0')}</span> ${i+1}번</legend><p class="exam-context">${esc(q.context)}</p><div class="facts">${q.facts.map(f=>`<span class="fact">${esc(f)}</span>`).join('')}</div><p><b>가장 먼저 실행할 행동은?</b></p><div class="exam-options">${q.options.map((o,j)=>`<label class="exam-option"><input type="radio" name="${q.id}" value="${j}" ${read().answers[q.id]===j?'checked':''}><span class="exam-option-number">${j+1}</span><span>${esc(o)}</span></label>`).join('')}</div></fieldset>`).join('')}<div class="exam-submit"><p id="exam-validation" role="alert"></p><button class="btn orange" type="submit">답안 제출하고 결과 보기 →</button><p class="exam-meta">제출 전까지 답을 바꿀 수 있어요.</p></div></form></section>`;
-    root.querySelectorAll('[data-jump]').forEach(b=>b.onclick=()=>{const target=root.querySelector('#exam-q-'+b.dataset.jump);target.focus({preventScroll:true});target.scrollIntoView({behavior:'smooth',block:'start'});});
+    root.innerHTML=`<section class="exam-shell"><a class="back" href="#check">← 운영 판단 점검</a><div class="eyebrow">오버워치 공통 · 10문제</div><h1>지금, 어떤 선택을 하겠어요?</h1><p>문제마다 행동 하나를 고르세요. 다음 문제 버튼으로 이동하고, 마지막에 답안을 제출하면 해설을 확인할 수 있어요.</p><p class="exam-meta" id="exam-save-note">답안은 자동 저장돼요. 중간에 나가도 이어서 풀 수 있어요.</p><div class="exam-toolbar"><div><b id="exam-progress" aria-live="polite"></b><progress id="exam-meter" max="10" value="0" aria-label="답안 선택 진행률"></progress></div><div class="exam-jumps" aria-label="문제 바로 가기">${data.questions.map((q,i)=>`<button type="button" data-jump="${i}">${i+1}</button>`).join('')}</div></div><form id="exam-form" novalidate>${data.questions.map((q,i)=>`<fieldset class="exam-question" id="exam-q-${i}" tabindex="-1"><legend><span>QUESTION ${String(i+1).padStart(2,'0')}</span> ${i+1}번</legend><p class="exam-context">${esc(q.context)}</p><div class="facts">${q.facts.map(f=>`<span class="fact">${esc(f)}</span>`).join('')}</div><p><b>가장 먼저 실행할 행동은?</b></p><div class="exam-options">${q.options.map((o,j)=>`<label class="exam-option"><input type="radio" name="${q.id}" value="${j}" ${read().answers[q.id]===j?'checked':''}><span class="exam-option-number">${j+1}</span><span>${esc(o)}</span></label>`).join('')}</div></fieldset>`).join('')}<div class="exam-page-actions"><button class="btn light" type="button" id="exam-prev">← 이전 문제</button><span id="exam-current-label" aria-live="polite"></span><button class="btn orange" type="button" id="exam-next">다음 문제 →</button></div><div class="exam-submit" id="exam-submit-area"><p id="exam-validation" role="alert"></p><button class="btn orange" type="submit">답안 제출하고 결과 보기 →</button><p class="exam-meta">제출 전까지 답을 바꿀 수 있어요.</p></div></form></section>`;
+    function showQuestion(index, focus=true) {
+      const state=read();state.current=Math.max(0,Math.min(data.questions.length-1,index));save(state);
+      root.querySelectorAll('.exam-question').forEach((el,i)=>{el.hidden=i!==state.current;});
+      root.querySelector('#exam-prev').disabled=state.current===0;
+      root.querySelector('#exam-next').hidden=state.current===data.questions.length-1;
+      root.querySelector('#exam-submit-area').hidden=state.current!==data.questions.length-1;
+      root.querySelector('#exam-current-label').textContent=`${state.current+1} / ${data.questions.length} 문제`;
+      updateProgress();
+      if(focus){const target=root.querySelector('#exam-q-'+state.current);target.focus({preventScroll:true});target.scrollIntoView({behavior:'smooth',block:'start'});}
+    }
+    root.querySelectorAll('[data-jump]').forEach(b=>b.onclick=()=>showQuestion(Number(b.dataset.jump)));
+    root.querySelector('#exam-prev').onclick=()=>showQuestion((read().current||0)-1);
+    root.querySelector('#exam-next').onclick=()=>showQuestion((read().current||0)+1);
     root.querySelector('#exam-form').onchange=e=>{
       if(e.target.type!=='radio')return;
       const state=read();state.answers[e.target.name]=Number(e.target.value);
@@ -71,10 +83,10 @@
     };
     root.querySelector('#exam-form').onsubmit=e=>{
       e.preventDefault();const state=read(),score=evaluate(state.answers);
-      if(!score.complete){const first=score.rows.findIndex(r=>!r.complete);root.querySelector('#exam-validation').textContent=`아직 선택하지 않은 문제가 있어요. ${first+1}번부터 확인해주세요.`;const target=root.querySelector('#exam-q-'+first);target.focus({preventScroll:true});target.scrollIntoView({behavior:'smooth',block:'start'});return;}
+      if(!score.complete){const first=score.rows.findIndex(r=>!r.complete);root.querySelector('#exam-validation').textContent=`아직 선택하지 않은 문제가 있어요. ${first+1}번부터 확인해주세요.`;showQuestion(first);root.querySelector('#exam-submit-area').hidden=false;return;}
       state.submitted=true;save(state);location.hash='check/common/result';
     };
-    updateProgress();
+    showQuestion(read().current||0,false);
   }
   function result() {
     const state=read();

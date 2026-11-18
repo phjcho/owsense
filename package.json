@@ -1,1 +1,1 @@
-{"private":true,"type":"module","scripts":{"build":"node scripts/build-analytics.mjs","db:generate":"drizzle-kit generate","test":"node --test tests/analytics.test.mjs"},"devDependencies":{"drizzle-kit":"0.31.4","drizzle-orm":"0.44.5"}}
+{"private":true,"type":"module","scripts":{"build":"node scripts/build-analytics.mjs","db:generate":"drizzle-kit generate","test":"node --test tests/*.test.mjs"},"devDependencies":{"drizzle-kit":"0.31.4","drizzle-orm":"0.44.5"}}

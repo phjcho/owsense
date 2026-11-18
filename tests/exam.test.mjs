@@ -27,3 +27,31 @@ test('missteps map to their own area, invalid persisted answers never submit',()
  assert.equal(exam.clean({version:0,answers,submitted:true}),null);
  assert.equal(exam.clean({version:1,answers:{bad:2},submitted:true}).submitted,false);
 });
+test('selection patterns cover each nonaccepted choice and never label accepted alternatives',()=>{
+ for(const q of data.questions)for(let choice=0;choice<5;choice++){
+   const hits=exam.decisionPatterns({[q.id]:choice});
+   assert.equal(hits.length,q.accepted.includes(choice)?0:1,`${q.id} choice ${choice}`);
+ }
+});
+test('same score with different choices produces different evidence and valid denominators',()=>{
+ const answers=Object.fromEntries(data.questions.map(q=>[q.id,q.accepted[0]]));
+ answers['defense-ult-plan']=4;answers['numbers-versus-ults']=2;
+ const delayed=exam.decisionPatterns(answers).find(p=>p.id==='delay');
+ assert.equal(delayed.count,2);assert.equal(delayed.total,6);assert.equal(delayed.percent,33);
+ answers['defense-ult-plan']=3;
+ assert.equal(exam.decisionPatterns(answers).find(p=>p.id==='delay').count,1);
+ assert.equal(exam.decisionPatterns(answers).find(p=>p.id==='invest').count,1);
+ assert.equal(exam.decisionPatterns({}).length,0);
+ assert.equal(exam.decisionPatterns(Object.fromEntries(data.questions.map(q=>[q.id,q.accepted[0]]))).length,0);
+});
+test('result renders answer-dependent bars and keeps explanations behind a toggle',()=>{
+ const answers=Object.fromEntries(data.questions.map(q=>[q.id,q.accepted[0]]));answers['numbers-versus-ults']=2;
+ const ctx={window:{},location:{hash:''},localStorage:{getItem:()=>JSON.stringify({version:1,answers,submitted:true}),setItem:()=>{}}};vm.createContext(ctx);
+ for(const file of ['exam-data.js','exam.js'])vm.runInContext(readFileSync(`${base}/${file}`,'utf8'),ctx);
+ const elements=new Map();const root={innerHTML:'',querySelector(s){if(!elements.has(s))elements.set(s,{hidden:true,setAttribute(k,v){this[k]=v;}});return elements.get(s);}};
+ ctx.window.owExam.mount(root,'common','result',guide,()=> '#guide');
+ assert.match(root.innerHTML,/17<small>%/);assert.match(root.innerHTML,/관련 6문항 중 1회/);assert.match(root.innerHTML,/<div id="exam-details" hidden>/);
+ assert.ok(root.innerHTML.indexOf('<span>9번 · 다시 확인할 선택')<root.innerHTML.indexOf('<span>1번 · 타당한 선택'));
+ root.querySelector('#exam-details-toggle').onclick();assert.equal(root.querySelector('#exam-details').hidden,false);
+ root.querySelector('#exam-details-toggle').onclick();assert.equal(root.querySelector('#exam-details').hidden,true);
+});

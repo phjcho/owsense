@@ -310,5 +310,121 @@ window.owExamData = {
       "chapter": 6,
       "section": "1 궁극기를 사용하는 두 가지 원칙"
     }
+  ],
+  "patterns": [
+    {
+      "id": "range",
+      "label": "상대가 유리한 거리로 싸움을 선택",
+      "description": "우리 조합의 사거리보다 거점 유지나 근접을 우선했어요.",
+      "opportunities": {
+        "range-or-point": [
+          0,
+          3,
+          4
+        ]
+      }
+    },
+    {
+      "id": "split",
+      "label": "함께 싸울 힘을 나누는 선택",
+      "description": "아군의 진입·지원·이동 타이밍이 갈리는 보기를 골랐어요.",
+      "opportunities": {
+        "range-or-point": [
+          2
+        ],
+        "dive-support-edge": [
+          1
+        ],
+        "unused-highground": [
+          4
+        ],
+        "regroup-ready": [
+          0,
+          1,
+          3
+        ],
+        "numbers-versus-ults": [
+          3
+        ]
+      }
+    },
+    {
+      "id": "height",
+      "label": "상대 고지대를 남겨두는 선택",
+      "description": "상대가 2층을 계속 활용할 수 있는 계획을 골랐어요.",
+      "opportunities": {
+        "dive-support-edge": [
+          3
+        ],
+        "unused-highground": [
+          1,
+          2
+        ]
+      }
+    },
+    {
+      "id": "delay",
+      "label": "공격·대응 기회를 미루는 선택",
+      "description": "현재 가능한 공격이나 필요한 궁 대응을 뒤로 미뤘어요.",
+      "opportunities": {
+        "unused-highground": [
+          0
+        ],
+        "focus-or-front": [
+          2,
+          3,
+          4
+        ],
+        "bait-transcendence": [
+          4
+        ],
+        "defense-ult-plan": [
+          4
+        ],
+        "numbers-versus-ults": [
+          2,
+          4
+        ],
+        "two-fight-budget": [
+          2,
+          4
+        ]
+      }
+    },
+    {
+      "id": "invest",
+      "label": "궁을 먼저 쓰거나 겹쳐 쓰는 선택",
+      "description": "아군 자원이나 상대 대응을 보기 전에 궁을 투자했어요.",
+      "opportunities": {
+        "regroup-ready": [
+          2
+        ],
+        "primal-or-nano": [
+          0,
+          1,
+          4
+        ],
+        "bait-transcendence": [
+          0
+        ],
+        "defense-ult-plan": [
+          1,
+          3
+        ],
+        "two-fight-budget": [
+          0
+        ]
+      }
+    },
+    {
+      "id": "expose",
+      "label": "아군을 돕기 위해 위험에 노출되는 선택",
+      "description": "아군이 스스로 복귀할 수 있는데도 함께 사선에 나가는 보기를 골랐어요.",
+      "opportunities": {
+        "primal-or-nano": [
+          3
+        ]
+      }
+    }
   ]
 };

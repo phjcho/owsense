@@ -1,6 +1,6 @@
 const IDS = new Set(/*QUESTION_IDS*/[]);
 const EVENTS = new Set(['visit','page_view','practice_start','question_start','question_complete','practice_complete','analysis_use']);
-const PAGES = new Set(['home','guide','practice','question','roles','review']);
+const PAGES = new Set(['home','guide','practice','question','roles','review','check']);
 const uuid = /^[a-f0-9]{8}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{12}$/i;
 const json=(data,status=200)=>new Response(JSON.stringify(data),{status,headers:{'Content-Type':'application/json; charset=utf-8','Cache-Control':'no-store'}});
 const html=(body,status=200)=>new Response(body,{status,headers:{'Content-Type':'text/html; charset=utf-8','Cache-Control':'no-store','Referrer-Policy':'same-origin','X-Robots-Tag':'noindex'}});

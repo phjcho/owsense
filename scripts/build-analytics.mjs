@@ -2,7 +2,7 @@ import {readFileSync,writeFileSync,mkdirSync,cpSync,readdirSync,rmSync,existsSyn
 const hosting=JSON.parse(readFileSync(existsSync('.openai/hosting.json') ? '.openai/hosting.json' : 'hosting.example.json'));
 const sourceRoot = existsSync('questions.json') ? '.' : 'dist';
 for(const dir of ['dist/client','dist/server','dist/.openai']){rmSync(dir,{recursive:true,force:true});mkdirSync(dir,{recursive:true});}
-for(const entry of ['index.html','app.js','match.js','style.css','questions.json','guide.json','match-backgrounds.json','analytics.js','assets'])cpSync(sourceRoot+'/'+entry,'dist/client/'+entry,{recursive:true});
+for(const entry of ['index.html','app.js','match.js','style.css','questions.json','guide.json','match-backgrounds.json','analytics.js','exam.js','exam-data.js','assets'])cpSync(sourceRoot+'/'+entry,'dist/client/'+entry,{recursive:true});
 const qs=JSON.parse(readFileSync(sourceRoot+'/questions.json'));
 const stats=readFileSync('worker/stats.html','utf8').replace('__QUESTION_NAMES__',JSON.stringify(Object.fromEntries(qs.map(q=>[q.id,q.title]))).replaceAll('<','\\u003c'));
 writeFileSync('dist/server/index.js',readFileSync('worker/index.js','utf8').replace('/*QUESTION_IDS*/[]',JSON.stringify(qs.map(q=>q.id))).replace("/*STATS_HTML*/''",JSON.stringify(stats)));

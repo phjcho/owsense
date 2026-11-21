@@ -55,3 +55,17 @@ test('result renders answer-dependent bars and keeps explanations behind a toggl
  root.querySelector('#exam-details-toggle').onclick();assert.equal(root.querySelector('#exam-details').hidden,false);
  root.querySelector('#exam-details-toggle').onclick();assert.equal(root.querySelector('#exam-details').hidden,true);
 });
+test('coaching follows selected evidence, limits goals and invents no weakness',()=>{
+ const answers=Object.fromEntries(data.questions.map(q=>[q.id,q.accepted[0]]));
+ assert.equal(exam.coachingSummary(answers).length,0);
+ answers['focus-or-front']=2;
+ let goals=exam.coachingSummary(answers);
+ assert.equal(goals.length,1);assert.equal(goals[0].id,'delay');assert.equal(goals[0].count,1);
+ assert.equal(goals[0].evidence[0].feedback,data.questions[3].feedback[2]);
+ answers['numbers-versus-ults']=2;
+ goals=exam.coachingSummary(answers);assert.equal(goals[0].count,2);
+ answers['range-or-point']=0;answers['primal-or-nano']=3;
+ assert.equal(exam.coachingSummary(answers).length,2);
+ answers['focus-or-front']=data.questions[3].accepted[0];answers['numbers-versus-ults']=data.questions[8].accepted[0];
+ assert.ok(exam.coachingSummary(answers).every(g=>g.id!=='delay'));
+});

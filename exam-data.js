@@ -314,20 +314,24 @@ window.owExamData = {
   "patterns": [
     {
       "id": "range",
-      "label": "상대가 유리한 거리로 싸움을 선택",
-      "description": "우리 조합의 사거리보다 거점 유지나 근접을 우선했어요.",
+      "label": "우리 조합이 불리한 거리에서 싸우려 했어요",
+      "description": "상대가 강한 근거리로 붙으면 우리 조합의 긴 사거리를 활용하기 어려워져요.",
       "opportunities": {
         "range-or-point": [
           0,
           3,
           4
         ]
+      },
+      "coaching": {
+        "title": "거점을 지키기 전에 싸울 거리를 확인하세요",
+        "action": "상대가 붙기 전, 우리 딜러가 편하게 공격할 거리로 함께 이동할 수 있는지 확인하세요."
       }
     },
     {
       "id": "split",
-      "label": "함께 싸울 힘을 나누는 선택",
-      "description": "아군의 진입·지원·이동 타이밍이 갈리는 보기를 골랐어요.",
+      "label": "아군이 함께 싸울 타이밍을 놓쳤어요",
+      "description": "진입·지원·이동이 엇갈리면 실제로 싸우는 아군에게 부담이 몰려요.",
       "opportunities": {
         "range-or-point": [
           2
@@ -346,12 +350,16 @@ window.owExamData = {
         "numbers-versus-ults": [
           3
         ]
+      },
+      "coaching": {
+        "title": "진입 전에 아군의 참여 조건을 확인하세요",
+        "action": "팀원이 살아 있는지만 보지 말고, 지금 함께 공격하거나 지원할 수 있는지 확인하세요."
       }
     },
     {
       "id": "height",
-      "label": "상대 고지대를 남겨두는 선택",
-      "description": "상대가 2층을 계속 활용할 수 있는 계획을 골랐어요.",
+      "label": "상대에게 유리한 고지대를 남겨뒀어요",
+      "description": "상대가 2층에서 계속 공격하면 아래층 아군이 이동하거나 싸우기 어려워져요.",
       "opportunities": {
         "dive-support-edge": [
           3
@@ -360,12 +368,16 @@ window.owExamData = {
           1,
           2
         ]
+      },
+      "coaching": {
+        "title": "아래층으로 전진하기 전에 상대 2층을 확인하세요",
+        "action": "상대 고지대를 누가 견제하거나 밀어낼 수 있는지 먼저 확인하세요."
       }
     },
     {
       "id": "delay",
-      "label": "공격·대응 기회를 미루는 선택",
-      "description": "현재 가능한 공격이나 필요한 궁 대응을 뒤로 미뤘어요.",
+      "label": "필요한 공격·대응 타이밍을 놓쳤어요",
+      "description": "행동할 조건이 갖춰졌는데 기다리면 공격 기회를 잃거나 아군을 지키지 못할 수 있어요.",
       "opportunities": {
         "unused-highground": [
           0
@@ -389,12 +401,16 @@ window.owExamData = {
           2,
           4
         ]
+      },
+      "coaching": {
+        "title": "기다릴 이유와 지금 행동할 이유를 비교하세요",
+        "action": "지금 공격하거나 대응할 수 있는데도, 불필요한 조건을 더 기다리고 있지는 않은지 확인하세요."
       }
     },
     {
       "id": "invest",
-      "label": "궁을 먼저 쓰거나 겹쳐 쓰는 선택",
-      "description": "아군 자원이나 상대 대응을 보기 전에 궁을 투자했어요.",
+      "label": "궁을 서두르거나 필요 이상으로 투자했어요",
+      "description": "지원이나 상대 반응을 확인하지 않고 궁을 쓰면 효과를 못 내거나 다음 한타의 자원이 부족해져요.",
       "opportunities": {
         "regroup-ready": [
           2
@@ -414,16 +430,24 @@ window.owExamData = {
         "two-fight-budget": [
           0
         ]
+      },
+      "coaching": {
+        "title": "궁을 쓰기 전에 얻을 이득부터 확인하세요",
+        "action": "아군이 함께 활용할 수 있는지 확인하고, 먼저 쓴 궁의 효과와 상대 대응을 본 뒤 추가 궁을 결정하세요."
       }
     },
     {
       "id": "expose",
-      "label": "아군을 돕기 위해 위험에 노출되는 선택",
-      "description": "아군이 스스로 복귀할 수 있는데도 함께 사선에 나가는 보기를 골랐어요.",
+      "label": "아군을 도우려다 함께 위험해졌어요",
+      "description": "스스로 복귀할 수 있는 아군을 따라 사선에 나가면 안전한 지원 위치까지 잃게 돼요.",
       "opportunities": {
         "primal-or-nano": [
           3
         ]
+      },
+      "coaching": {
+        "title": "아군의 생존기를 확인하고 안전한 지원 위치를 지키세요",
+        "action": "직접 따라가기 전에 아군이 생존기로 복귀할 수 있는지, 안전한 자리에서 지원할 수 있는지 확인하세요."
       }
     }
   ]

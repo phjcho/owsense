@@ -8,21 +8,21 @@ vm.createContext(sandbox);
 for(const file of ['exam-data.js','exam.js'])vm.runInContext(readFileSync(`${base}/${file}`,'utf8'),sandbox);
 const {owExam:exam,owExamData:data}=sandbox.window;
 const guide=JSON.parse(readFileSync(`${base}/guide.json`));
-test('ten unique five-option items with exact guide-section references',()=>{
- assert.equal(data.questions.length,10);
- assert.equal(new Set(data.questions.map(q=>q.id)).size,10);
+test('sixteen unique five-option items with exact guide-section references',()=>{
+ assert.equal(data.questions.length,16);
+ assert.equal(new Set(data.questions.map(q=>q.id)).size,16);
  for(const q of data.questions){assert.equal(q.options.length,5);assert.equal(q.feedback.length,5);assert.ok(q.accepted.length>0&&q.accepted.length<5);assert.equal(new Set(q.accepted).size,q.accepted.length);assert.ok(q.accepted.every(i=>Number.isInteger(i)&&i>=0&&i<5));assert.ok(q.feedback.every(s=>s.length>15));assert.equal(guide.find(c=>c.id===q.chapter).blocks.filter(b=>b.type==='heading'&&b.text===q.section).length,1,q.section);}
 });
 test('every accepted alternative counts equally; omissions cannot complete',()=>{
  const answers=Object.fromEntries(data.questions.map(q=>[q.id,q.accepted[0]]));
- assert.equal(exam.evaluate(answers).accepted,10);assert.equal(exam.evaluate(answers).complete,true);
- for(const q of data.questions)for(const a of q.accepted){const changed={...answers,[q.id]:a};assert.equal(exam.evaluate(changed).accepted,10);assert.equal(exam.evaluate(changed).areas.reduce((s,a)=>s+a.misses.length,0),0);}
+ assert.equal(exam.evaluate(answers).accepted,16);assert.equal(exam.evaluate(answers).complete,true);
+ for(const q of data.questions)for(const a of q.accepted){const changed={...answers,[q.id]:a};assert.equal(exam.evaluate(changed).accepted,16);assert.equal(exam.evaluate(changed).areas.reduce((s,a)=>s+a.misses.length,0),0);}
  delete answers[data.questions[0].id];assert.equal(exam.evaluate(answers).complete,false);
 });
 test('missteps map to their own area, invalid persisted answers never submit',()=>{
  const answers=Object.fromEntries(data.questions.map(q=>[q.id,q.accepted[0]]));
  const q=data.questions[8];answers[q.id]=2;
- const result=exam.evaluate(answers);assert.equal(result.accepted,9);assert.equal(result.areas.find(a=>a.id==='ultimate').misses[0].q.id,q.id);
+ const result=exam.evaluate(answers);assert.equal(result.accepted,15);assert.equal(result.areas.find(a=>a.id==='ultimate').misses[0].q.id,q.id);
  answers[q.id]='2';assert.equal(exam.clean({version:1,answers,submitted:true}).submitted,false);
  assert.equal(exam.clean({version:0,answers,submitted:true}),null);
  assert.equal(exam.clean({version:1,answers:{bad:2},submitted:true}).submitted,false);
@@ -76,4 +76,38 @@ test('ambiguous ult follow-up is accepted and defensive timing stays separate',(
  const goals=exam.coachingSummary({'focus-or-front':2,'numbers-versus-ults':2});
  assert.equal(goals.length,2);assert.ok(goals.some(g=>g.id==='delay'));assert.ok(goals.some(g=>g.id==='late-defense'));
  for(const g of goals)assert.equal(g.evidence.length,1);
+});
+
+test('four domains have four questions each and previous completed answers resume at eleven',()=>{
+ const report=exam.evaluate({});
+ assert.equal(report.areas.length,4);
+ for(const a of report.areas)assert.equal(a.total,4,a.id);
+ const answers=Object.fromEntries(data.questions.slice(0,10).map(q=>[q.id,q.accepted[0]]));
+ const migrated=exam.clean({version:1,answers,current:9,submitted:true});
+ assert.equal(Object.keys(migrated.answers).length,10);assert.equal(migrated.current,10);assert.equal(migrated.submitted,false);
+ for(const q of data.questions.slice(10))migrated.answers[q.id]=q.accepted[0];
+ assert.equal(exam.evaluate(migrated.answers).complete,true);assert.equal(exam.evaluate(migrated.answers).accepted,16);
+});
+test('new macro mistakes distinguish retreat from mandatory contest and overchase',()=>{
+ assert.equal(exam.decisionPatterns({'reset-lost-fight':0})[0].id,'late-reset');
+ assert.equal(exam.decisionPatterns({'overtime-touch-plan':4})[0].id,'objective-clock');
+ assert.equal(exam.decisionPatterns({'advantage-without-chase':0})[0].id,'overchase');
+ assert.equal(exam.decisionPatterns({'deadline-route':0})[0].id,'objective-clock');
+ const p=exam.decisionPatterns({'deadline-route':0,'overtime-touch-plan':2})[0];
+ assert.equal(p.total,2);assert.equal(p.count,1);assert.equal(p.percent,50);
+});
+
+test('run screen has sixteen steps and resumes an old complete attempt on question eleven',()=>{
+ const answers=Object.fromEntries(data.questions.slice(0,10).map(q=>[q.id,q.accepted[0]]));
+ const ctx={window:{},location:{hash:''},localStorage:{getItem:()=>JSON.stringify({version:1,answers,current:9,submitted:true}),setItem:()=>{}}};vm.createContext(ctx);
+ for(const file of ['exam-data.js','exam.js'])vm.runInContext(readFileSync(`${base}/${file}`,'utf8'),ctx);
+ const el=()=>({hidden:false,disabled:false,classList:{toggle(){}},setAttribute(){},removeAttribute(){},focus(){},scrollIntoView(){}});
+ const steps=data.questions.map((q,i)=>({...el(),dataset:{jump:String(i)}})),fields=data.questions.map(el),elements=new Map();
+ const root={innerHTML:'',querySelectorAll(s){return s==='[data-jump]'?steps:s==='.exam-question'?fields:[];},querySelector(s){if(!elements.has(s))elements.set(s,el());return elements.get(s);}};
+ ctx.window.owExam.mount(root,'common','run',guide,()=> '#guide');
+ assert.match(root.innerHTML,/max="16"/);assert.match(root.innerHTML,/data-jump="15"/);
+ assert.equal(fields[10].hidden,false);assert.equal(fields[9].hidden,true);
+ assert.equal(root.querySelector('#exam-current-label').textContent,'11 / 16 문제');
+ steps[15].onclick();assert.equal(root.querySelector('#exam-next').hidden,true);assert.equal(root.querySelector('#exam-submit-area').hidden,false);
+ assert.equal(root.querySelector('#exam-progress').textContent,'10 / 16문제 선택');
 });

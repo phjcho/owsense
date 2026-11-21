@@ -36,24 +36,24 @@ test('selection patterns cover each nonaccepted choice and never label accepted 
 test('same score with different choices produces different evidence and valid denominators',()=>{
  const answers=Object.fromEntries(data.questions.map(q=>[q.id,q.accepted[0]]));
  answers['defense-ult-plan']=4;answers['numbers-versus-ults']=2;
- const delayed=exam.decisionPatterns(answers).find(p=>p.id==='delay');
- assert.equal(delayed.count,2);assert.equal(delayed.total,6);assert.equal(delayed.percent,33);
+ const delayed=exam.decisionPatterns(answers).find(p=>p.id==='late-defense');
+ assert.equal(delayed.count,2);assert.equal(delayed.total,2);assert.equal(delayed.percent,100);
  answers['defense-ult-plan']=3;
- assert.equal(exam.decisionPatterns(answers).find(p=>p.id==='delay').count,1);
+ assert.equal(exam.decisionPatterns(answers).find(p=>p.id==='late-defense').count,1);
  assert.equal(exam.decisionPatterns(answers).find(p=>p.id==='invest').count,1);
  assert.equal(exam.decisionPatterns({}).length,0);
  assert.equal(exam.decisionPatterns(Object.fromEntries(data.questions.map(q=>[q.id,q.accepted[0]]))).length,0);
 });
-test('result renders answer-dependent bars and keeps explanations behind a toggle',()=>{
+test('result leads with coaching, keeps percentages small and opens related explanations',()=>{
  const answers=Object.fromEntries(data.questions.map(q=>[q.id,q.accepted[0]]));answers['numbers-versus-ults']=2;
  const ctx={window:{},location:{hash:''},localStorage:{getItem:()=>JSON.stringify({version:1,answers,submitted:true}),setItem:()=>{}}};vm.createContext(ctx);
  for(const file of ['exam-data.js','exam.js'])vm.runInContext(readFileSync(`${base}/${file}`,'utf8'),ctx);
- const elements=new Map();const root={innerHTML:'',querySelector(s){if(!elements.has(s))elements.set(s,{hidden:true,setAttribute(k,v){this[k]=v;}});return elements.get(s);}};
+ const reviewButton={dataset:{coachingReview:'9'}};const elements=new Map();const root={innerHTML:'',querySelectorAll(){return [reviewButton];},querySelector(s){if(!elements.has(s))elements.set(s,{hidden:true,setAttribute(k,v){this[k]=v;},focus(){this.focused=true;},scrollIntoView(){this.scrolled=true;}});return elements.get(s);}};
  ctx.window.owExam.mount(root,'common','result',guide,()=> '#guide');
- assert.match(root.innerHTML,/17<small>%/);assert.match(root.innerHTML,/관련 6문항 중 1회/);assert.match(root.innerHTML,/<div id="exam-details" hidden>/);
+ assert.doesNotMatch(root.innerHTML,/decision-patterns|role="meter"/);assert.match(root.innerHTML,/관련 2문항 중 1회 · 50%/);assert.ok(root.innerHTML.indexOf('다음 게임에서는')<root.innerHTML.indexOf('판단 근거'));assert.match(root.innerHTML,/<div id="exam-details" hidden>/);
  assert.ok(root.innerHTML.indexOf('<span>9번 · 다시 확인할 선택')<root.innerHTML.indexOf('<span>1번 · 타당한 선택'));
  root.querySelector('#exam-details-toggle').onclick();assert.equal(root.querySelector('#exam-details').hidden,false);
- root.querySelector('#exam-details-toggle').onclick();assert.equal(root.querySelector('#exam-details').hidden,true);
+ root.querySelector('#exam-details-toggle').onclick();assert.equal(root.querySelector('#exam-details').hidden,true);reviewButton.onclick();assert.equal(root.querySelector('#exam-details').hidden,false);assert.equal(root.querySelector('#exam-review-9').open,true);assert.equal(root.querySelector('#exam-review-9').focused,true);
 });
 test('coaching follows selected evidence, limits goals and invents no weakness',()=>{
  const answers=Object.fromEntries(data.questions.map(q=>[q.id,q.accepted[0]]));
@@ -62,10 +62,18 @@ test('coaching follows selected evidence, limits goals and invents no weakness',
  let goals=exam.coachingSummary(answers);
  assert.equal(goals.length,1);assert.equal(goals[0].id,'delay');assert.equal(goals[0].count,1);
  assert.equal(goals[0].evidence[0].feedback,data.questions[3].feedback[2]);
- answers['numbers-versus-ults']=2;
+ answers['unused-highground']=0;
  goals=exam.coachingSummary(answers);assert.equal(goals[0].count,2);
  answers['range-or-point']=0;answers['primal-or-nano']=3;
  assert.equal(exam.coachingSummary(answers).length,2);
- answers['focus-or-front']=data.questions[3].accepted[0];answers['numbers-versus-ults']=data.questions[8].accepted[0];
+ answers['focus-or-front']=data.questions[3].accepted[0];answers['unused-highground']=data.questions[2].accepted[0];
  assert.ok(exam.coachingSummary(answers).every(g=>g.id!=='delay'));
+});
+
+test('ambiguous ult follow-up is accepted and defensive timing stays separate',()=>{
+ assert.ok(data.questions[6].accepted.includes(0));
+ assert.equal(exam.decisionPatterns({'bait-transcendence':0}).length,0);
+ const goals=exam.coachingSummary({'focus-or-front':2,'numbers-versus-ults':2});
+ assert.equal(goals.length,2);assert.ok(goals.some(g=>g.id==='delay'));assert.ok(goals.some(g=>g.id==='late-defense'));
+ for(const g of goals)assert.equal(g.evidence.length,1);
 });
